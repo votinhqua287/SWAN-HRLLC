@@ -69,6 +69,7 @@ class SimConfig:
     reactive: bool = False
     tau_r_slots: int = 1
     creq_scale: float = 1.0
+    creq_scale_crit: float = 1.0   # mismatch applied to the critical users' required rates only
     # --- controller
     scheduler: str = "tas"   # tas | mw | mlwdf | edf | pf | ratemax
     mode: str = "adaptive"   # adaptive (SS..SA and SM) | full (SA j=M and SM) | ss | sa | sa_j
@@ -139,7 +140,10 @@ def required_rate(cfg):
         c = np.array([_creq_poisson(l, cfg.Dmax_slots, d) for l, d in zip(lam, de)])
     else:
         c = required_rate_onoff(h, al, be, Dmax, de) + cfg.batch / cfg.period_slots
-    return c * cfg.creq_scale
+    c = c * cfg.creq_scale
+    if cfg.n_crit > 0:
+        c[:cfg.n_crit] = c[:cfg.n_crit] * cfg.creq_scale_crit
+    return c
 
 
 from .queue import fifo_remove as _fifo_remove

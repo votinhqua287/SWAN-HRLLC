@@ -195,9 +195,18 @@ def fig_key():
     _save(fig, "fig_key")
 
 
+def _merge(a, b):
+    out = {k: dict(v) for k, v in a.items()}
+    for k, v in b.items():
+        out.setdefault(k, {}).update(v)
+    return out
+
+
 def fig_energy():
     """H2: energy per slot versus achieved delay-violation probability (V sweep)."""
     R = load("energy")
+    if os.path.isdir(os.path.join(RESULTS, "energy2")):
+        R = _merge(R, load("energy2"))
     fig, ax = plt.subplots(figsize=(W, H))
     for s in [k for k in ["TLA-SWAN", "SWAN-MW", "SWAN-RATEMAX"] if k in R]:
         vals = sorted(R[s].keys())
@@ -212,6 +221,24 @@ def fig_energy():
 
 
 def fig_target():
+    """Minimum average power at which each controller meets a violation target (h=2, V sweep)."""
+    R = load("cost")
+    if os.path.isdir(os.path.join(RESULTS, "cost2")):
+        R = _merge(R, load("cost2"))
+    targets = [1e-3, 1e-4, 1e-5, 1e-6]
+    fig, ax = plt.subplots(figsize=(W, H))
+    for s in [k for k in ["TLA-SWAN", "SWAN-MW", "SWAN-RATEMAX"] if k in R]:
+        pts = []
+        for d in targets:
+            feas = [v for v in R[s] if R[s][v]["pv"] <= d]
+            pts.append(min(R[s][v]["power_mW"] for v in feas) if feas else np.nan)
+        _series(ax, [-np.log10(d) for d in targets], pts, s)
+    ax.set_xlabel(r"Reliability target $-\log_{10}\delta$"); ax.set_ylabel("Minimum average power (mW)")
+    ax.set_xticks([3, 4, 5, 6]); ax.legend(loc="upper left")
+    _save(fig, "fig_target")
+
+
+def fig_target_old():
     R = load("target")["TLA-SWAN"]
     vals = sorted(R.keys(), reverse=True)
     fig, ax = plt.subplots(figsize=(W, H))
@@ -272,29 +299,41 @@ def fig_cfg():
 
 
 def fig_single(Ts=1e-4):
-    """Route A: analytical tail approximation versus simulation for one device in fixed SA mode."""
+    """Route A: analytical tail approximation versus simulation for one device in fixed SA mode.
+    Left: pooled violation probability versus the peak rate; right: drop-by-drop scatter."""
     from src.tail_analysis import single_user_fixed_sa
-    from experiments.run_campaign import EXPERIMENTS
     import json, glob
     R = load("single")
-    fig, ax = plt.subplots(figsize=(W, H))
-    for s in ["SINGLE-SA", "SINGLE-TLA"]:
-        if s not in R:
-            continue
-        vals = sorted(R[s].keys())
-        _series(ax, vals, _floor([R[s][v]["pv"] for v in vals], None, [R[s][v]["arr"] for v in vals]), s)
-    # analytical curve: average over the drops of the fixed-SA runs (SNR from each run)
+    fig, axs = plt.subplots(1, 2, figsize=(2 * W, H))
+    ax = axs[0]
+    if "SINGLE-SA" in R:
+        vals = sorted(R["SINGLE-SA"].keys())
+        _series(ax, vals, _floor([R["SINGLE-SA"][v]["pv"] for v in vals], None, [R["SINGLE-SA"][v]["arr"] for v in vals]), "SINGLE-SA")
     files = glob.glob(os.path.join(RESULTS, "single", "SINGLE-SA__*.json"))
-    approx = {}
+    approx, pts = {}, []
     for fn in files:
         r = json.load(open(fn)); c = r["cfg"]
         snr = 10 ** (r["snr_agg_dB"][0] / 10)
         a = single_user_fixed_sa(c["h"], c["alpha"], c["beta"], c["Ts"], snr, c["n"], c["L"], c["bmax"], c["Dmax_slots"])
         approx.setdefault(c["h"], []).append(a["pv_approx"])
+        arr = max(sum(r["arrivals"]), 1)
+        pts.append((a["pv_approx"], sum(r["viol"]) / arr, 1.0 / arr, c["h"]))
     hs = sorted(approx)
-    ax.plot(hs, [np.mean(approx[h]) for h in hs], "k-.", lw=1.0, label="Route-A approximation (fixed SA)")
+    ax.plot(hs, [np.mean(approx[h]) for h in hs], "k-.", lw=1.0, label="effective-bandwidth approximation (drop average)")
     ax.set_yscale("log"); ax.set_xlabel("Peak arrival rate $h$ (packets/slot)"); ax.set_ylabel(r"$\Pr\{D>D_{\max}\}$")
-    ax.legend()
+    ax.set_ylim(1e-7, 1); ax.legend(loc="lower right", fontsize=6)
+    ax = axs[1]
+    hs_all = sorted({p[3] for p in pts})
+    for i, h in enumerate(hs_all):
+        xs = [p[0] for p in pts if p[3] == h]; ys = [max(p[1], p[2]) for p in pts if p[3] == h]
+        obs = [p[1] > 0 for p in pts if p[3] == h]
+        ax.scatter([x for x, o in zip(xs, obs) if o], [y for y, o in zip(ys, obs) if o], marker="osv^D*"[i % 6], s=22, color=PALETTE[i % 8], label=f"$h={h:g}$")
+        ax.scatter([x for x, o in zip(xs, obs) if not o], [y for y, o in zip(ys, obs) if not o], marker="osv^D*"[i % 6], s=22, facecolors="white", edgecolors=PALETTE[i % 8])
+    lim = [1e-7, 1]
+    ax.plot(lim, lim, "k--", lw=0.7); ax.plot(lim, [l * 3 for l in lim], "0.6", lw=0.5, ls=":"); ax.plot(lim, [l / 3 for l in lim], "0.6", lw=0.5, ls=":")
+    ax.set_xscale("log"); ax.set_yscale("log"); ax.set_xlim(1e-7, 1); ax.set_ylim(1e-7, 1)
+    ax.set_xlabel("approximation"); ax.set_ylabel("simulation (per drop)")
+    ax.legend(fontsize=6, ncol=2, loc="upper left")
     _save(fig, "fig_single")
 
 
@@ -314,7 +353,7 @@ def all_figures():
     safe(fig_sweep, "users", "Number of users $K$", "fig_users")
     safe(fig_sweep, "tau", r"Reconfiguration delay $\tau_r$ (slots)", "fig_tau")
     safe(fig_sweep, "rician", "Rician factor (dB)", "fig_rician", xfun=lambda v: 60 if np.isinf(v) else 10 * np.log10(v))
-    safe(fig_sweep, "mismatch", r"Mismatch factor on $c_{\rm req}$", "fig_mismatch")
+    safe(fig_sweep, "mismatch", r"Mismatch factor on the critical users' $c_{\rm req}$", "fig_mismatch", xscale="log")
     safe(fig_V)
     safe(fig_hetero)
     safe(fig_bcd)

@@ -62,10 +62,11 @@ EXPERIMENTS = {
                      T=50_000, seeds=16, base=dict(n_crit=2, h_crit=4.0, delta_crit=1e-6)),
     "rician":   dict(param="rician_K", values=[np.inf, 100.0, 10.0, 3.0], schemes=["TLA-SWAN", "SWAN-MLWDF", "SWAN-MW"],
                      T=250_000, seeds=4),
-    "mismatch": dict(param="creq_scale", values=[0.5, 0.75, 1.0, 1.5, 2.0], schemes=["TLA-SWAN"], T=150_000, seeds=3),
+    "mismatch": dict(param="creq_scale_crit", values=[0.25, 0.5, 1.0, 2.0, 4.0], schemes=["TLA-SWAN"], T=50_000, seeds=16,
+                     base=dict(n_crit=2, h_crit=4.0, delta_crit=1e-6)),
     "traffic":  dict(param="traffic", values=["onoff", "poisson", "periodic"], schemes=MAIN5, T=150_000, seeds=3,
                      base=dict(period_slots=20, batch=2, jitter_slots=2)),
-    "sharp":    dict(param="pkt_scale", values=[0.25, 0.5, 0.75, 1.0, 1.5], schemes=["TLA-SWAN"], T=150_000, seeds=3),
+    "sharp":    dict(param="kappa", values=[0.25, 0.5, 0.75, 1.0, 1.5], schemes=["TLA-SWAN"], T=150_000, seeds=3),
     "credit":   dict(param="zeta", values=[0.0, 0.1, 0.25, 0.5, 1.0], schemes=["TLA-SWAN"], T=150_000, seeds=3),
     # ---------------- campaign 2 (research-guide items) ----------------
     # H1: mean delay vs tail for the same controllers, versus load (no dropping before 4 ms)
@@ -76,6 +77,13 @@ EXPERIMENTS = {
                      T=150_000, seeds=4, base=ENERGY),
     "target":   dict(param="delta", values=[1e-3, 1e-4, 1e-5, 1e-6, 1e-7], schemes=["TLA-SWAN"], T=150_000, seeds=4,
                      base=dict(ENERGY, V=0.3)),
+    # tail-agnostic controllers need a larger energy weight to react (their objectives count packets)
+    "energy2":  dict(param="V", values=[10.0, 30.0, 100.0, 300.0], schemes=["SWAN-MW", "SWAN-RATEMAX"], T=150_000, seeds=4, base=ENERGY),
+    # cost of hyper-reliability: at a lighter load (h=2) sweep V and read the minimum power meeting each target
+    "cost":     dict(param="V", values=[0.0, 0.003, 0.01, 0.03, 0.1, 0.3, 1.0], schemes=["TLA-SWAN"], T=200_000, seeds=4,
+                     base=dict(ENERGY, h=2.0)),
+    "cost2":    dict(param="V", values=[0.0, 1.0, 3.0, 10.0, 30.0, 100.0], schemes=["SWAN-MW", "SWAN-RATEMAX"], T=200_000, seeds=4,
+                     base=dict(ENERGY, h=2.0)),
     # H2/H4: fixed aggregation depth j under bursty and Poisson arrivals with equal mean rate
     "fixedj":   dict(param="fixed_j", values=[1, 2, 3, 4], schemes=["SWAN-FIXJ-onoff", "SWAN-FIXJ-poisson"], T=150_000, seeds=4),
     # configuration delay of segment activation (with lookahead), energy-aware controller
@@ -93,7 +101,7 @@ SCHEMES.update({
     "SWAN-FIXJ-poisson": dict(arch="swan", placement="tapp", scheduler="tas", mode="sa_j", traffic="poisson"),
     "TLA-SWAN-cfg":      dict(arch="swan", placement="tapp", scheduler="tas", la=1.0, **ENERGY, V=0.3),
     "TLA-SWAN-cfg-warm": dict(arch="swan", placement="tapp", scheduler="tas", la=1.0, keep_warm=True, **ENERGY, V=0.3),
-    "SWAN-FULL-cfg":     dict(arch="swan", placement="tapp", scheduler="tas", mode="full", keep_warm=True, **ENERGY, V=0.3),
+    "SWAN-FULL-cfg":     dict(arch="swan", placement="tapp", scheduler="tas", mode="full", keep_warm=True, la=1.0, **ENERGY, V=0.3),
     "TLA-SWAN-abl":      dict(arch="swan", placement="tapp", scheduler="tas", **ENERGY, V=0.3),
     "SINGLE-SA":         dict(arch="swan", placement="tapp", scheduler="tas", mode="sa"),
     "SINGLE-TLA":        dict(arch="swan", placement="tapp", scheduler="tas"),

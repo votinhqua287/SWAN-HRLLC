@@ -1,1 +1,13 @@
-1281 jobs
+275 jobs
+[1/275] cost/TLA-SWAN__0__s1.json 37s (elapsed 37s)
+[2/275] cost/TLA-SWAN__0__s2.json 38s (elapsed 38s)
+[3/275] cost/TLA-SWAN__0__s0.json 38s (elapsed 38s)
+[4/275] cost/TLA-SWAN__0__s3.json 38s (elapsed 38s)
+[5/275] cost/TLA-SWAN__0.003__s1.json 37s (elapsed 75s)
+[6/275] cost/TLA-SWAN__0.003__s3.json 37s (elapsed 75s)
+[7/275] cost/TLA-SWAN__0.003__s0.json 39s (elapsed 76s)
+[8/275] cost/TLA-SWAN__0.003__s2.json 38s (elapsed 76s)
+[9/275] cost/TLA-SWAN__0.01__s0.json 38s (elapsed 113s)
+[10/275] cost/TLA-SWAN__0.01__s1.json 39s (elapsed 114s)
+[11/275] cost/TLA-SWAN__0.01__s3.json 39s (elapsed 115s)
+[12/275] cost/TLA-SWAN__0.01__s2.json 40s (elapsed 116s)

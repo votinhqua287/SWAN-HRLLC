@@ -432,7 +432,7 @@ The following schemes are compared.
 \caption{Mean delay (left) and delay-violation probability (right) of the same controllers versus the peak arrival rate; packets are kept until $4$ ms so that both statistics are measured on the same packets. Controllers with nearly identical average delays differ by orders of magnitude in the tail.}
 \label{fig:key}
 \end{figure*}
-%%DISC-KEY%%
+Fig.~\ref{fig:key} tests hypothesis H1 directly: it shows, for the same six controllers and the same packets (kept until $4$ ms so that the mean is well defined), the mean delay and the probability of exceeding the $1$-ms budget as the peak rate grows from $1.5$ to $4$ packets per slot. The mean delays of the four channel-aware SWAN controllers are indistinguishable up to $h=3$ ($0.10$--$0.16$ ms, i.e., within $5\%$ of one another), and the throughput-greedy rate-max and max-weight rules even have the smallest mean at high load. Their tails differ by orders of magnitude. At $h=2$, TLA-SWAN and M-LWDF deliver every one of $9.6\times10^{5}$ packets within the budget, whereas max-weight and rate-max miss it with probability $1.1\times10^{-4}$ and $1.7\times10^{-4}$; at $h=2.5$ the four controllers span $3.9\times10^{-4}$ (TLA-SWAN), $5.9\times10^{-4}$ (M-LWDF), $1.3\times10^{-3}$ (max-weight), and $1.8\times10^{-3}$ (rate-max). A design that reports only the mean delay would therefore declare max-weight or rate-max the best scheduler and would miss the HRLLC target by two to three orders of magnitude. The fixed full-aggregation mode (one user per slot with all segments) and EDF are worse in both statistics, because they give up spatial multiplexing and channel awareness, respectively. As the load approaches saturation ($h\ge3.5$) all controllers converge, since the tail is then dominated by overload rather than by scheduling; the tail-aware controllers keep a small advantage.
 
 \subsection{Delay Tail}
 \begin{figure}[t]
@@ -459,7 +459,7 @@ Fig.~\ref{fig:ccdf} shows the complementary CDF of the packet delay for the defa
 \caption{Delay-violation probability versus the burst parameters of the ON--OFF sources.}
 \label{fig:traffic}
 \end{figure}
-%%DISC-TRAFFIC%%
+Fig.~\ref{fig:traffic} varies the two parameters of the ON--OFF sources under deadline dropping (packets are discarded at $\Dmax$, so that the violation probability is the discard rate); each point pools three user drops and $1.1\times10^{6}$ packets. In Fig.~\ref{fig:peak} the peak rate grows at a fixed activity factor, i.e., the mean load grows proportionally. At $h=2$ TLA-SWAN discards none of the $1.1\times10^{6}$ packets, M-LWDF $1.1\times10^{-5}$, fixed PAs $3.7\times10^{-5}$, max-weight $1.4\times10^{-4}$, the rate-centric design $4.3\times10^{-4}$, and the single-waveguide PASS $3.4\times10^{-3}$. The ordering is preserved over the whole range, with TLA-SWAN between $1.3$ and $1.7$ times below M-LWDF up to $h=3$ and between $2.5$ and $6$ times below max-weight; the rate-centric SWAN and the single-waveguide PASS are one and two orders of magnitude worse, and all curves converge only when the peak rate approaches the capacity of the system ($h=4$, i.e., $3.2$ packets per slot on average for four streams of at most four to five packets). Fixed PAs at the segment centers are as good as TAPP at light load, where every user is within $5$ m of a PA, and $1.3$--$1.5$ times worse at $h\ge3$. Fig.~\ref{fig:burst} keeps the mean rate fixed and varies the mean burst duration from $0.25$ to $4$ ms (the OFF duration is scaled accordingly). Burstiness alone moves the tail of TLA-SWAN by four orders of magnitude, from $9\times10^{-7}$ to $8\times10^{-3}$, although the average load is identical: with $0.25$-ms bursts the backlog never exceeds what a single slot can drain, whereas $4$-ms bursts at $h=3$ exceed the single-stream rate for $40$ slots and overlap with the bursts of other users. The advantage of tail-aware control is largest for short and medium bursts, where the scheduler can still decide which packets to save (a factor $500$ over max-weight at $0.25$ ms, $4$ at $1$ ms), and shrinks to a factor $1.5$ for $4$-ms bursts, where the system is simply overloaded during a burst and no scheduling rule can help. This is the regime in which the frame-level placement and the number of segments matter more than the slot-level rule (H4 and Section~\ref{sec:results}-C).
 
 \subsection{Impact of the SWAN Parameters}
 \begin{figure}[t]
@@ -477,7 +477,7 @@ Fig.~\ref{fig:ccdf} shows the complementary CDF of the packet delay for the defa
 \caption{Delay-violation probability versus the physical-layer parameters of the SWAN.}
 \label{fig:phy}
 \end{figure}
-%%DISC-PHY%%
+Fig.~\ref{fig:phy} varies the physical resources of the SWAN. In Fig.~\ref{fig:power} the per-segment transmit power ranges from $-20$ to $0$ dBm, i.e., the SNR of a user $5$ m from its nearest PA from about $6$ to $26$ dB. At $-20$ dBm every scheme discards more than $20\%$ of the packets, because a single stream carries at most one or two packets per slot and the bursts cannot be drained; the tail then falls by roughly an order of magnitude per $5$ dB. At $-5$ dBm TLA-SWAN discards $5\times10^{-6}$ of the packets ($6$ of $1.1\times10^{6}$), M-LWDF $4\times10^{-5}$, max-weight $4\times10^{-4}$, the rate-centric design $6\times10^{-4}$, and the co-located array $5.5\times10^{-3}$, and at $0$ dBm TLA-SWAN reaches the HRLLC regime with no discarded packet, where max-weight still discards $3.6\times10^{-5}$ and the array $6.7\times10^{-4}$. The gain of tail-aware control therefore grows with the SNR, from a factor of about $4$ at $-10$ dBm to $70$ at $-5$ dBm over max-weight: the more the physical layer can do, the more it matters to spend it on the right packets. The fixed array needs about $10$ dB more power than the SWAN for the same tail, which is the path-loss advantage of bringing the PAs close to the users. Fig.~\ref{fig:segments} keeps the service area at $40$ m and divides it into $M$ segments of $40/M$ m. Two segments cannot serve eight users with bursty traffic (all schemes above $8\%$), four segments give $1.2\times10^{-3}$ for TLA-SWAN, five give $1.1\times10^{-4}$, and eight or ten segments leave no discarded packet in $1.1\times10^{6}$ for the tail-aware controllers, whereas the single-waveguide PASS with the same number of PAs improves only from $0.16$ to $5\times10^{-3}$, because a single RF chain cannot multiplex the users and the long waveguide adds up to $3$ dB of in-waveguide loss. Segmentation is thus worth two to three orders of magnitude in the tail at equal number of PAs, and the number of segments is the resource that removes the overload regime of Fig.~\ref{fig:burst}.
 
 \subsection{Impact of the Latency Budget and of the Number of Users}
 \begin{figure}[t]
@@ -495,7 +495,7 @@ Fig.~\ref{fig:ccdf} shows the complementary CDF of the packet delay for the defa
 \caption{Delay-violation probability versus the HRLLC budget and the load.}
 \label{fig:dmaxusers}
 \end{figure}
-%%DISC-DMAXUSERS%%
+Fig.~\ref{fig:dmaxusers} shows the two remaining dimensions of the HRLLC requirement. In Fig.~\ref{fig:dmax} the budget varies from $0.3$ to $3$ ms at the default load. With $0.3$ ms ($3$ slots) every scheme discards about $2\%$ of the packets, because a burst of $h=3$ packets per slot cannot be drained in three slots by any placement or rule; the budget then buys about one order of magnitude per doubling for the tail-aware controllers, which reach $5\times10^{-5}$ (TLA-SWAN) and $1.4\times10^{-4}$ (M-LWDF) at $2$ ms and no discarded packet, respectively $1.8\times10^{-5}$, at $3$ ms, whereas max-weight and the rate-centric design remain at $3.3\times10^{-4}$ and $8.3\times10^{-4}$; the gain of tail awareness grows with the budget, from $1.3$ at $0.3$ ms to $26$ at $2$ ms, because a longer budget leaves the controller more freedom to choose which packets to postpone. EDF is insensitive to the budget, since its losses are decoding failures rather than late deliveries. In Fig.~\ref{fig:users} the number of users grows from $4$ to $12$ at a fixed per-user load. With four users TLA-SWAN discards no packet, M-LWDF $3.6\times10^{-6}$, and max-weight $1.7\times10^{-4}$; with $12$ users, i.e., three users per segment and a mean load of $3.6$ packets per slot, the tail reaches $8.3\times10^{-3}$ for TLA-SWAN and $2\times10^{-2}$ for max-weight and the rate-centric design. The relative gain of TLA-SWAN over max-weight therefore decreases from more than $50$ to $2.4$ as the system fills up, which again shows that tail-aware control is most valuable in the regime where the physical resources are sufficient on average but not during simultaneous bursts.
 
 \subsection{Segment Activation, Energy, and Configuration Delay (H2)}
 \begin{figure}[t]
@@ -523,32 +523,31 @@ Fig.~\ref{fig:ccdf} shows the complementary CDF of the packet delay for the defa
 \caption{Energy, mode selection, and configuration delay in the energy-aware operation of the SWAN.}
 \label{fig:h2}
 \end{figure}
-%%DISC-H2%%
+Fig.~\ref{fig:energy} addresses hypothesis H2. With a circuit power of $P_c=100$ mW per active RF chain, the energy weight $V$ trades power consumption against the tail. Without energy awareness ($V=0$) every controller keeps on average $1.5$ segments active and consumes $150$ mW per slot; TLA-SWAN attains $9.3\times10^{-4}$ against $4.4\times10^{-3}$ (max-weight) and $3.4\times10^{-3}$ (rate-max). With $V=0.03$ TLA-SWAN reduces its consumption by one third to $99$ mW at the price of a tail of $2.0\times10^{-3}$, which is still below what the two tail-agnostic controllers achieve at $140$ mW, and with $V=0.3$ it needs $94$ mW for $4.4\times10^{-3}$, the same tail as max-weight at $138$ mW: for equal reliability, tail-aware control saves about $30\%$ of the energy, and for equal energy it improves the tail by a factor of $2$ to $5$ (H3). The tail-agnostic controllers are almost insensitive to $V$ because their objectives (queue length and packets) are large compared with the energy penalty, so they keep aggregating; the tail-risk potential, whose values are at most one per packet, is naturally commensurate with an energy cost. Fig.~\ref{fig:modes} explains the mechanism: at $V=0.3$ the controller uses segment selection almost exclusively while the total backlog is below ten packets, deepens the aggregation and starts multiplexing as the backlog grows, and uses multiplexing in two thirds of the slots when the backlog exceeds $40$ packets. Full segment activation is therefore not the energy-optimal operating point of a SWAN under bursty traffic: the segments are needed only during bursts, and the controller activates them exactly then.
+%%DISC-H2B%%
 
 \subsection{Bursty Versus Poisson Arrivals (H4) and Single-Device Validation}
 \begin{figure}[t]
 \centering
-\begin{subfigure}[t]{0.49\columnwidth}
-\includegraphics[width=\linewidth]{fig_fixedj}
-\caption{fixed aggregation depth $j$ under ON--OFF and Poisson arrivals of equal mean.}
+\includegraphics[width=0.85\columnwidth]{fig_fixedj}
+\caption{Delay-violation probability of a TDMA controller with a fixed aggregation depth $j$ under ON--OFF and Poisson arrivals of equal mean rate.}
 \label{fig:fixedj}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.49\columnwidth}
-\includegraphics[width=\linewidth]{fig_single}
-\caption{single device: simulation versus the effective-bandwidth approximation.}
-\label{fig:single}
-\end{subfigure}
-\caption{Influence of the arrival process on the optimal segment policy, and analytical validation.}
-\label{fig:h4}
 \end{figure}
-%%DISC-H4%%
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.9\textwidth]{fig_single}
+\caption{Single device in fixed full-aggregation mode ($P_{\max}=-15$ dBm): pooled simulation versus the drop-averaged effective-bandwidth approximation (left) and drop-by-drop comparison, open markers denoting drops without observed violations, dotted lines a factor of three (right).}
+\label{fig:single}
+\end{figure*}
+Hypothesis H4 states that bursty arrivals change the segment policy itself, not only the numbers. Fig.~\ref{fig:fixedj} isolates the segment dimension by fixing the aggregation depth $j$ of a TDMA controller (one user per slot served by its $j$ best segments, TAS user selection, no multiplexing) and comparing ON--OFF arrivals with Poisson arrivals of the same mean rate. Under Poisson arrivals, $j=2$ already removes all but one violation in $1.4\times10^{6}$ packets, so the energy-optimal policy would activate two segments; under ON--OFF arrivals, the discard rate keeps decreasing with $j$, from $0.135$ to $0.031$ at $j=M$, and TDMA is in any case insufficient, which is why the proposed controller multiplexes during bursts (Fig.~\ref{fig:modes}). The same message appears in Table~\ref{tab:traffic}: with Poisson arrivals of the default mean, none of the channel-aware controllers discards a single packet of $1.1\times10^{6}$, so that a design validated with Poisson traffic would see no difference between them, whereas the ON--OFF and the periodic-with-jitter model of industrial control (a $2$-packet batch every $2$ ms plus event-triggered bursts) separate the tail-aware and tail-agnostic controllers by factors of $4$ to $7$. The burst structure, not the mean load, is what a SWAN HRLLC controller must be designed and evaluated against.
+Finally, Fig.~\ref{fig:single} validates the analytical route on the single-device case of the research plan: one ON--OFF device served every slot in full-aggregation mode ($P_{\max}=-15$ dBm, SNR between $18$ and $20$ dB depending on the drop, i.e., a service of $b^\star=4$ or $5$ packets per slot), for which the service process is i.i.d.\ and the effective-bandwidth approximation $\Pr\{D>\Dmax\}\approx e^{-\theta^\star\mathrm{EB}(\theta^\star)\Dmax}$ of Theorem~\ref{thm:tail} can be evaluated in closed form (the discrete-time effective bandwidth of the Poisson-in-ON source and the effective capacity of the Bernoulli FBL service). The drop-averaged approximation follows the simulated curve over four orders of magnitude, from $10^{-4}$ at $h=4$ to $5\times10^{-2}$ at $h=5.5$, and the drop-by-drop comparison shows that the approximation is within a factor of $2.5$ of the simulation whenever violations are observed and predicts values below $10^{-7}$ whenever none is observed in $7\times10^{5}$ packets; the tail is extremely sensitive to whether the service is $4$ or $5$ packets per slot, which the approximation captures through $b^\star$. This satisfies the requirement of at least one analytical tail expression that agrees with simulation; the extension of the bound to the multi-user controller through the service fraction $\phi_k$ is stated in Theorem~\ref{thm:tail}.
 
 \subsection{Tail-Aware Placement with Heterogeneous Users}
 \begin{figure}[t]
 \centering
 \begin{subfigure}[t]{0.49\columnwidth}
 \includegraphics[width=\linewidth]{fig_hetero}
-\caption{per-class violation probability for seven placement rules (TAS scheduling).}
+\caption{per-class violation probability for seven placement rules over $16$ drops (TAS scheduling).}
 \label{fig:hetero}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.49\columnwidth}
@@ -559,7 +558,7 @@ Fig.~\ref{fig:ccdf} shows the complementary CDF of the packet delay for the defa
 \caption{Tail-aware placement with two critical users ($h=4$, $\delta=10^{-6}$) and six regular users; TAPP is shown for three aggregation depths $j_0$.}
 \label{fig:placement}
 \end{figure}
-%%DISC-PLACEMENT%%
+Fig.~\ref{fig:placement} examines the frame-level placement with two critical users ($h=4$, $\delta=10^{-6}$) among eight, over $16$ user drops of $50\,000$ slots (Fig.~\ref{fig:hetero}) because the effect of the placement depends strongly on the geometry of a drop. TAPP with $j_0=2$ gives the lowest violation probability, $3.3\times10^{-3}$ overall and $4.8\times10^{-3}$ for the critical users, against $4.9\times10^{-3}$ and $8.3\times10^{-3}$ for the sum-rate placement, $5.4\times10^{-3}$ and $1.0\times10^{-2}$ for the tail-agnostic max-min placement, and $5.8\times10^{-3}$ and $1.0\times10^{-2}$ for PAs at the segment centers: weighting the placement by the required rates halves the violation probability of the critical users at no cost for the regular users, whose violation probability is also the lowest under TAPP ($2.7\times10^{-3}$). Among the TAPP variants, the depth $j_0=1$ (nearest-segment rate) is $1.4$ times worse than $j_0=2$, the full-aggregation depth $j_0=M$ is marginally worse, and the weighted max-min margin, which protects the worst user only, is $1.5$ times worse overall although it yields the smallest worst-user probability ($2.5\times10^{-2}$ against $6\times10^{-2}$). Fig.~\ref{fig:bcd} shows that the tail load \eqref{eq:load} decreases monotonically and that Algorithm~\ref{alg:tapp} converges in two to four sweeps for every drop, with the first sweep bringing more than $90\%$ of the improvement, so that the placement can be recomputed at every frame.
 
 \subsection{Reactive Versus Statistical PA Repositioning}
 \begin{figure}[t]
@@ -568,7 +567,7 @@ Fig.~\ref{fig:ccdf} shows the complementary CDF of the packet delay for the defa
 \caption{Delay-violation probability versus the PA repositioning delay $\tau_r$: frame-level TAPP placement (proposed), fixed PAs, and per-slot reactive repositioning.}
 \label{fig:tau}
 \end{figure}
-%%DISC-TAUV%%
+Fig.~\ref{fig:tau} contrasts the frame-level placement with reactive repositioning, in which every segment moves its PA above the backlogged user with the largest value every slot and pays a silence of $\tau_r$ slots per move. Even with an instantaneous reconfiguration ($\tau_r=0$) the reactive policy is $1.6$ times worse than TAPP ($1.8\times10^{-3}$ against $1.1\times10^{-3}$), because chasing the currently most urgent user takes the PA away from the users whose bursts will come next, and it degrades to $3.8\times10^{-3}$ for $\tau_r=1$ slot and to $3.4\times10^{-2}$ for $\tau_r=10$ slots ($1$ ms), with about $6\times10^{3}$ moves per $10^{5}$ slots. TAPP moves the PAs only at frame boundaries and is unaffected by $\tau_r$; fixed PAs at the segment centers are within $10\%$ of TAPP in this homogeneous scenario. Together with Fig.~\ref{fig:cfg}, this supports modeling PA repositioning as a slow, statistics-driven operation and reserving the fast timescale for scheduling and segment activation.
 
 \subsection{Robustness and Sensitivity}
 \begin{figure}[t]
