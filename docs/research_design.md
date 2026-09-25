@@ -66,23 +66,27 @@ stop when no block improves. Complexity $O(I\,M\,G\,K)$. Outputs $\mathbf x^\sta
 Benchmarks: sum-rate placement, tail-agnostic max-min rate, nearest-user projection, segment centres.
 
 ### 3.3 Algorithm 2 — Tail-Aware Scheduling with packet values (TAS), slot level
-State: age profile $q_k[a]$, virtual credit $Z_k$ (packets), power level set $\{\rho_i\}$.
-1. Credit update (ε-persistent virtual queue): $Z_k\leftarrow\min\{\max\{Z_k+c_{{\rm req},k}\mathbb 1\{Q_k>0\}-s_k,0\},Z_k^{\max}\}$.
-2. Packet value of a packet of user $k$ with age $a$: $v_k(a)=\exp\{a_k(a+1+\zeta Z_k/c_{{\rm req},k}-D_{\max})\}$,
-   $a_k=\ln(1/\delta_k)/D_{\max}$ (exponential/LWDF-type tail weight, shifted by the credit).
-   $U_k(b)$ = value of the $b$ oldest packets.
-3. For every subset $\mathcal S$ and power level $\rho$ (tables precomputed once per frame):
+State: age profile $q_k[a]$; power level set $\{\rho_i\}$; tail exponent $\Lambda_k=\ln(1/\delta_k)/D_{\max}$; sharpness $\kappa\in(0,1]$ (default 0.75).
+1. Packet value at age $a$: $\nu_k(a)=\exp(\kappa\Lambda_k(a-D_{\max}))=\delta_k^{\kappa(D_{\max}-a)/D_{\max}}$
+   (fresh packet $\delta_k^\kappa$, packet at deadline 1). Tail-risk potential $\Phi=\sum_k\sum_a q_k[a]\nu_k(a)$.
+2. Value removed by delivering the $b$ oldest packets of user $k$: $U_k(b)=\sum_{i\le b}\nu_k(a_{k,(i)}+1)$.
+3. Per slot (drift-plus-penalty on $\Phi$): for every subset $\mathcal S$ and power level $\rho$ (tables precomputed once per frame):
    $b_k^\star=\arg\max_b (1-\varepsilon_k(b,\rho\gamma(\mathcal S)))U_k(b)$;
    $J(\mathcal S,\rho)=\sum_{k\in\mathcal S}(1-\varepsilon_k(b_k^\star))U_k(b_k^\star)-V\rho P_{\rm tot}(\mathcal S)$.
-   Choose $\arg\max J$ (exhaustive for $K\le 12$, greedy otherwise). $|\mathcal S|=1$ ⇒ SA mode.
+   Choose $\arg\max J$ (exhaustive for $K\le 12$). $|\mathcal S|=1$ ⇒ SA mode, else SM (ZF).
 4. Transmit, ARQ on failure, drop expired packets.
-Theorems (colleague): drift-plus-penalty bound and bounded virtual queues ⇒ worst-case delay bound;
-EC/SNC-based tail bound for the resulting service process.
+Optional variant (evaluated, not used): virtual credit $Z_k$ (ε-persistent queue on $c_{{\rm req},k}$) shifting the ages by $\zeta Z_k/c_{{\rm req},k}$;
+found to over-prioritise bursting users (`zeta` in `SimConfig`, experiment `credit`).
+Theorems (colleague): drift-plus-penalty characterisation and bounded potential ⇒ violation bound; EC/SNC tail bound.
+
+**Scheduler selection study (100k slots × 2 drops, `scratchpad/cmp_sched2.log`):** packet-value TAS with $\kappa=0.75$, $\zeta=0$ gave
+$P^v$ = 8.8e-4 / 6.6e-4 / 3.6e-3 in the three test settings vs. M-LWDF 1.55e-3 / 1.17e-3 / 3.9e-3; credit weights $\zeta\ge0.25$ and
+PF normalisation did not help; the EXP-rule variant was best only in the heterogeneous setting (3.2e-3).
 
 ## 4. Benchmarks
 | Tag | Placement | Scheduler | Purpose |
 |---|---|---|---|
-| TLA-SWAN | TAPP | TAS | proposed |
+| TLA-SWAN | TAPP | TAS (packet values, $\kappa=0.75$) | proposed |
 | SWAN-MLWDF | TAPP | M-LWDF | classic tail-aware scheduler |
 | SWAN-MW | TAPP | max-weight (queue length) | throughput-optimal, tail-agnostic |
 | SWAN-EDF | TAPP | earliest deadline first | deadline-aware, channel-agnostic |
@@ -96,6 +100,6 @@ EC/SNC-based tail bound for the resulting service process.
 E1 delay CCDF; E2 vs peak rate $h$; E3 vs burst length $1/\alpha$; E4 vs $P_{\max}$; E5 vs $M$;
 E6 vs $D_{\max}$; E7 vs $K$; E8 vs $\tau_r$ (reactive vs proposed); E9 power–tail trade-off vs $V$;
 E10 heterogeneous classes (placement comparison); E11 BCD convergence; E12 robustness (Rician,
-$c_{\rm req}$ mismatch, traffic model). Default: $M=4$, $L_s=10$ m, $d=3$ m, $D_y=10$ m, $K=8$,
+$c_{\rm req}$ mismatch, traffic model); E13 sensitivity to $\kappa$ and to the optional credit weight $\zeta$. Default: $M=4$, $L_s=10$ m, $d=3$ m, $D_y=10$ m, $K=8$,
 $f_c=28$ GHz, $n_{\rm eff}=1.4$, $\kappa=0.08$ dB/m, $\sigma^2=-101$ dBm, $P_{\max}=-10$ dBm,
 $L=256$ bits, $D_{\max}=1$ ms, $\delta=10^{-5}$, ON 1 ms / OFF 9 ms, $h=3$ packets/slot.

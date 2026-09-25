@@ -61,10 +61,10 @@ class SimConfig:
     placement: str = "tapp"  # tapp | sumrate | center | nearest | maxmin
     scheduler: str = "tas"   # tas | mw | edf | rr | pf | mlwdf
     V: float = 0.0
-    zeta: float = 1.0
-    tas_variant: str = "pkt"  # pkt | qz | holz | holz_pf | exp
+    zeta: float = 0.0          # weight of the (optional) service-deficit credit in the packet values
+    tas_variant: str = "pkt"  # pkt (proposed) | qz | holz | holz_pf | exp
     pkt_floor: float = 0.0     # throughput floor added to every packet value
-    pkt_scale: float = 1.0     # multiplier on the tail exponent a_k
+    pkt_scale: float = 0.75    # tail-sharpness kappa multiplying the exponent a_k
     pkt_pf: bool = False       # divide packet values by the EWMA service rate (PF-type normalisation)
     rho_levels: tuple = (1.0,)
     reactive: bool = False

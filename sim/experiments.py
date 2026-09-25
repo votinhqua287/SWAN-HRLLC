@@ -52,6 +52,8 @@ EXPERIMENTS = {
     "mismatch": dict(param="creq_scale", values=[0.5, 0.75, 1.0, 1.5, 2.0], schemes=["TLA-SWAN"], T=250_000, seeds=4),
     "traffic":  dict(param="traffic", values=["onoff", "poisson", "periodic"], schemes=MAIN5, T=250_000, seeds=4,
                      base=dict(period_slots=20, batch=2, jitter_slots=2)),
+    "sharp":    dict(param="pkt_scale", values=[0.25, 0.5, 0.75, 1.0, 1.5], schemes=["TLA-SWAN"], T=250_000, seeds=4),
+    "credit":   dict(param="zeta", values=[0.0, 0.1, 0.25, 0.5, 1.0], schemes=["TLA-SWAN"], T=250_000, seeds=4),
 }
 
 

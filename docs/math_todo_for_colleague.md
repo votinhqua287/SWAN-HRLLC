@@ -9,7 +9,7 @@ Notation reminder (Section II): $M$ segments, $K$ users, PA positions $\mathbf x
 power $P_{\max}$, SA SNR $\gamma_k^{\rm SA}(\mathbf x,\rho)$ in (3), SM SNR in (4), FBL error
 $\varepsilon(b,\gamma)$ in (5), ON–OFF source $(h_k,\alpha_k,\beta_k)$ [ON→OFF rate $\alpha$,
 OFF→ON rate $\beta$, Poisson($h$) packets/slot in ON], tail target $(D_{\max},\delta_k)$,
-required rate $c_{{\rm req},k}$ in (9), credit $Z_k$ in (14), packet value $v_k(a)$ in (15).
+required rate $c_{{\rm req},k}$ in (9), packet values $\nu_k(a)$, $v_k(a)$ and potential $\Phi$ in Sec. IV-C.
 
 ## L1 — Lemma 1 (tail-latency-aware required rate) — Appendix A
 **Claim.** For the ON–OFF fluid source, $\mathrm{EB}(\theta)=\frac{1}{2\theta}[h\theta-\alpha-\beta+\sqrt{(h\theta-\alpha-\beta)^2+4\beta h\theta}]$;
@@ -42,25 +42,28 @@ $\max_k R_k^{\rm SA}/c_{{\rm req},k}$ at $r_{k,m}=d$, hence convergence; finite 
 Optionally: any limit point of the continuous-domain version is a coordinate-wise maximizer, and discuss stationarity for the
 max–min (non-smooth) objective (e.g., via Clarke stationarity).
 
-## T1 — Theorem 1 (drift-plus-penalty / worst-case delay) — Appendix D
-**Setting.** Credits (14) without cap, $\zeta=0$, bounded arrivals $A_k[t]\le A_{\max}$, bounded service $s_k[t]\le b_{\max}$,
-feasibility slack $\epsilon>0$ (a randomized stationary policy serves every backlogged user at rate $\ge c_{{\rm req},k}+\epsilon$).
+## T1 — Theorem 1 (drift-plus-penalty characterisation of TAS) — Appendix D
+**Objects.** Packet value $\nu_k(a)=e^{\kappa\Lambda_k(a-D_{\max})}$, $\Lambda_k=\ln(1/\delta_k)/D_{\max}$; potential
+$\Phi=\sum_k\Phi_k$, $\Phi_k=\sum_a q_k[a]\nu_k(a)$; value delivered $U_k(b)=\sum_{i\le b}\nu_k(a_{k,(i)}+1)$.
 
-**Claims.** (i) $Z_k[t]\le Z_k^{\rm ub}(V)$ deterministically; (ii) $\bar P\le\bar P^{\rm opt}+\mathcal B/V$;
-(iii) worst-case delay $\le\lceil (Q_k^{\max}+Z_k^{\rm ub})/c_{{\rm req},k}\rceil$ slots for every delivered packet.
+**Dynamics (one slot).** Unserved packets: value $\times e^{\kappa\Lambda_k}$; arrivals: $+\nu_k(0)$ each (bounded by $A_{\max}$);
+expiries: packets at age $D_{\max}-1$ that are not served leave with value $\nu_k(D_{\max}-1)=e^{-\kappa\Lambda_k}$ and are counted
+as violations; delivered packets: $-U_k(b_k)$ w.p. $1-\varepsilon_k$.
 
-**Suggested route.** Lyapunov function $L=\frac12\sum_k(Q_k^2+Z_k^2)$; drift-plus-penalty with penalty $VP_{\rm tot}$; the per-slot
-minimizer of the bound is exactly (P3) with $v_k(a)\equiv$ const (compare with Neely 2010, Ch. 4 and Neely 2013 "Delay-based NUM",
-Sec. IV, ε-persistent service queues). Deterministic bounds on $Z_k$ follow from the fact that the scheduler serves user $k$
-whenever $Z_k$ exceeds a threshold that makes its weight dominate $V P_{\rm tot}$ (bounded power). The worst-case delay bound is
-the persistent-queue argument: a packet arriving at $t_0$ is served by $t_0+\lceil(Q_k^{\max}+Z_k^{\rm ub})/c_{{\rm req},k}\rceil$
-because otherwise $Z_k$ would exceed its bound. Then extend to $\zeta>0$ / age-dependent values: all values are in
-$[\delta_k, e^{a_k\zeta D_{\max}}]$, so the objective is a weighted sum of the same service variables with bounded weights.
+**Claims.** (i) $\Delta(\Phi)+V\,\mathbb E[P_{\rm tot}]=C-\sum_{k\in\mathcal S}e^{\kappa\Lambda_k}(1-\varepsilon_k)U_k(b_k)+VP_{\rm tot}$ with $C$
+action-independent ⇒ Algorithm 2 (with the constant $e^{\kappa\Lambda_k}$ absorbed in the values) is the exact per-slot minimiser of the
+drift-plus-penalty expression. (ii) Under a slack condition (some stationary randomized policy removes value at a rate exceeding the
+multiplicative growth by $\epsilon\Phi$ when $\Phi$ is large), the time average $\bar\Phi$ is bounded and
+$P_k^{\rm v}\le e^{\kappa\Lambda_k}\bar\Phi_k/\bar\lambda_k$ (every discarded packet carried value $e^{-\kappa\Lambda_k}$ one slot earlier).
+(iii) $O(1/V)$ power optimality vs. $O(V)$ potential.
 
-**Alternative framing (if preferred).** Define the tail-risk potential $\Phi[t]=\sum_k\sum_{i\in\mathcal Q_k[t]} v_k(a_i)$
-(sum of the values of all queued packets). TAS with $V=0$ is the greedy minimizer of the one-step expected drift of $\Phi$;
-a drift bound on $\Phi$ yields a bound on the long-run drop rate because a packet is discarded exactly when its value reaches
-$1$. This framing avoids the credit and matches the simulations with $\zeta=0$.
+**Suggested route.** Telescoping sum of the drift over $t=0..T-1$; compare the per-slot minimiser with the randomized policy $\pi$ at the same
+state (the comparison is state-wise because (P3) minimises the exact conditional drift); Foster–Lyapunov type argument for the
+multiplicative dynamics (see Neely 2010, Ch. 4, and Neely 2013 for delay-based potentials); express the slack through the SA rates
+$R_k^{\rm SA}(\mathbf x^\star)$ and the required rates (Lemma 1) if possible. State all constants.
+
+**Optional.** Relate the packet-value rule to the LWDF large-deviations optimality (Stolyar–Ramanan 2001): with a single packet per user the
+rule reduces to LWDF with weights $\kappa\Lambda_k$.
 
 ## T2 — Theorem 2 (tail bound) — Appendix E
 Effective-bandwidth/effective-capacity duality: $\Pr\{D_k>D_{\max}\}\le\varsigma_k e^{-\theta_k^\star\mathrm{EB}_k(\theta_k^\star)D_{\max}}$ where
