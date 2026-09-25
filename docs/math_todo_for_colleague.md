@@ -55,7 +55,7 @@ action-independent ⇒ Algorithm 2 (with the constant $e^{\kappa\Lambda_k}$ abso
 drift-plus-penalty expression. (ii) Under a slack condition (some stationary randomized policy removes value at a rate exceeding the
 multiplicative growth by $\epsilon\Phi$ when $\Phi$ is large), the time average $\bar\Phi$ is bounded and
 $P_k^{\rm v}\le e^{\kappa\Lambda_k}\bar\Phi_k/\bar\lambda_k$ (every discarded packet carried value $e^{-\kappa\Lambda_k}$ one slot earlier).
-(iii) $O(1/V)$ power optimality vs. $O(V)$ potential.
+(iii) $O(1/V)$ energy optimality vs. $O(V)$ potential (penalty = energy $\sum_{m\in\mathcal A}(P_c+P_m^{\rm tx})T_s$ + configuration cost); the one-step lookahead term $\lambda\,\mathcal U^+(a)$ can be treated as a bounded perturbation of the per-slot objective.
 
 **Suggested route.** Telescoping sum of the drift over $t=0..T-1$; compare the per-slot minimiser with the randomized policy $\pi$ at the same
 state (the comparison is state-wise because (P3) minimises the exact conditional drift); Foster–Lyapunov type argument for the

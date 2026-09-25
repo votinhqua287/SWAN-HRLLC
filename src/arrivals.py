@@ -89,6 +89,14 @@ class PeriodicJitterSource:
         return a
 
 
+def beta_for_activity(alpha, activity, Ts):
+    """OFF->ON rate giving stationary ON probability `activity` for the slotted chain
+    with per-slot transition probabilities 1-exp(-alpha Ts), 1-exp(-beta Ts)."""
+    p_on_off = 1 - np.exp(-alpha * Ts)
+    p_off_on = p_on_off * activity / (1 - activity)
+    return -np.log(1 - p_off_on) / Ts
+
+
 def required_rate_onoff(h, alpha, beta, Dmax, delta):
     """Tail-latency-aware required service rate for an ON-OFF fluid source
     (peak rate h, ON->OFF alpha, OFF->ON beta; all rates in consistent units):

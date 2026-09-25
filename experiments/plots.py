@@ -9,7 +9,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from .experiments import load, RESULTS, EXPERIMENTS
+from experiments.run_campaign import load, RESULTS, EXPERIMENTS
 
 FIG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "paper", "figures")
 PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
@@ -23,6 +23,17 @@ STYLE = {  # scheme -> (label, colour slot, marker, linestyle)
     "SWAN-reactive": ("SWAN, reactive repositioning", 6, "+", ":"),
     "PASS-1WG":      ("Single-waveguide PASS", 7, "*", "--"),
     "Fixed-array":   ("Fixed antenna array", 6, "p", ":"),
+    "SWAN-RATEMAX":  ("SWAN, rate-max", 4, "D", "--"),
+    "SWAN-SS":       ("SWAN, fixed SS", 5, "x", "-."),
+    "SWAN-SA":       ("SWAN, fixed SA (all segments)", 6, "+", ":"),
+    "SWAN-FULL":     ("SWAN, full activation", 7, "*", "--"),
+    "TLA-SWAN-cfg":  ("TLA-SWAN (energy-aware)", 0, "o", "-"),
+    "TLA-SWAN-cfg-warm": ("TLA-SWAN, keep-warm", 1, "s", "--"),
+    "SWAN-FULL-cfg": ("SWAN, full activation", 7, "*", ":"),
+    "SWAN-FIXJ-onoff":   ("ON--OFF arrivals", 0, "o", "-"),
+    "SWAN-FIXJ-poisson": ("Poisson arrivals (same mean)", 1, "s", "--"),
+    "SINGLE-SA":     ("fixed SA, simulation", 0, "o", "-"),
+    "SINGLE-TLA":    ("TLA-SWAN, simulation", 1, "s", "--"),
 }
 plt.rcParams.update({
     "font.size": 8, "font.family": "serif", "mathtext.fontset": "cm",
@@ -165,6 +176,126 @@ def fig_placement_example():
     _save(fig, "fig_placement")
 
 
+def fig_key():
+    """H1: mean delay (left) and delay-violation probability (right) versus the peak rate."""
+    R = load("key")
+    fig, axs = plt.subplots(1, 2, figsize=(2 * W, H))
+    for s in [k for k in ["TLA-SWAN", "SWAN-MLWDF", "SWAN-MW", "SWAN-RATEMAX", "SWAN-EDF", "SWAN-SA"] if k in R]:
+        vals = sorted(R[s].keys())
+        x = np.array(vals, float)
+        _series(axs[0], x, [R[s][v]["mean_delay"] * 0.1 for v in vals], s)
+        _series(axs[1], x, _floor([R[s][v]["pv"] for v in vals], None, [R[s][v]["arr"] for v in vals]), s)
+    axs[0].set_ylabel("Mean delay (ms)"); axs[1].set_ylabel(r"$\Pr\{D>D_{\max}\}$"); axs[1].set_yscale("log")
+    for ax in axs:
+        ax.set_xlabel("Peak arrival rate $h$ (packets/slot)")
+    axs[1].axhline(1e-5, color="0.4", lw=0.7, ls="--")
+    axs[0].legend(loc="upper left")
+    _save(fig, "fig_key")
+
+
+def fig_energy():
+    """H2: energy per slot versus achieved delay-violation probability (V sweep)."""
+    R = load("energy")
+    fig, ax = plt.subplots(figsize=(W, H))
+    for s in [k for k in ["TLA-SWAN", "SWAN-MW", "SWAN-RATEMAX"] if k in R]:
+        vals = sorted(R[s].keys())
+        pw = np.array([R[s][v]["power_mW"] for v in vals]); pv = _floor([R[s][v]["pv"] for v in vals], None, [R[s][v]["arr"] for v in vals])
+        _series(ax, pw, pv, s)
+        if s == "TLA-SWAN":
+            for v, x, y in zip(vals, pw, pv):
+                ax.annotate(f"$V={v:g}$", (x, y), textcoords="offset points", xytext=(3, 3), fontsize=5.5)
+    ax.set_yscale("log"); ax.set_xlabel("Average power consumption (mW, incl. circuit power)"); ax.set_ylabel(r"$\Pr\{D>D_{\max}\}$")
+    ax.legend(loc="upper right")
+    _save(fig, "fig_energy")
+
+
+def fig_target():
+    R = load("target")["TLA-SWAN"]
+    vals = sorted(R.keys(), reverse=True)
+    fig, ax = plt.subplots(figsize=(W, H))
+    x = [-np.log10(v) for v in vals]
+    ax.plot(x, [R[v]["power_mW"] for v in vals], "o-", color=PALETTE[0], markerfacecolor="white", label="power (mW)")
+    ax.set_xlabel(r"Reliability target $-\log_{10}\delta$"); ax.set_ylabel("Average power (mW)")
+    ax2 = ax.twinx()
+    ax2.plot(x, _floor([R[v]["pv"] for v in vals], None, [R[v]["arr"] for v in vals]), "s--", color=PALETTE[1], markerfacecolor="white", label="achieved $\\Pr\\{D>D_{\\max}\\}$")
+    ax2.set_yscale("log"); ax2.set_ylabel(r"achieved $\Pr\{D>D_{\max}\}$")
+    ax2.plot(x, vals, ":", color="0.4", lw=0.8)
+    h1, l1 = ax.get_legend_handles_labels(); h2, l2 = ax2.get_legend_handles_labels()
+    ax.legend(h1 + h2, l1 + l2, loc="upper left")
+    _save(fig, "fig_target")
+
+
+def fig_modes():
+    """Probability of each SWAN mode versus the total queue length (energy-aware TLA-SWAN, V=0.3)."""
+    R = load("energy")["TLA-SWAN"]
+    v = 0.3 if 0.3 in R else sorted(R.keys())[len(R) // 2]
+    mh = R[v]["mode_hist"]
+    tot = mh.sum(axis=0); mask = tot > 200
+    q = np.arange(mh.shape[1])[mask]
+    fig, ax = plt.subplots(figsize=(W, H))
+    names = ["idle", "SS ($j=1$)", "SA ($1<j<M$)", "SA ($j=M$)", "SM"]
+    for i, nm in enumerate(names):
+        if i == 0:
+            continue
+        ax.plot(q, mh[i][mask] / tot[mask], marker="osv^D"[i], markerfacecolor="white", color=PALETTE[i], label=nm)
+    ax.set_xlabel("Total queue length (packets)"); ax.set_ylabel("Mode probability")
+    ax.set_ylim(0, 1); ax.legend()
+    _save(fig, "fig_modes")
+
+
+def fig_fixedj():
+    R = load("fixedj")
+    fig, ax = plt.subplots(figsize=(W, H))
+    for s in ["SWAN-FIXJ-onoff", "SWAN-FIXJ-poisson"]:
+        if s not in R:
+            continue
+        vals = sorted(R[s].keys())
+        _series(ax, vals, _floor([R[s][v]["pv"] for v in vals], None, [R[s][v]["arr"] for v in vals]), s)
+    ax.set_yscale("log"); ax.set_xlabel("Fixed number of aggregated segments $j$"); ax.set_ylabel(r"$\Pr\{D>D_{\max}\}$")
+    ax.set_xticks([1, 2, 3, 4]); ax.legend()
+    _save(fig, "fig_fixedj")
+
+
+def fig_cfg():
+    R = load("cfg")
+    fig, ax = plt.subplots(figsize=(W, H))
+    for s in ["TLA-SWAN-cfg", "TLA-SWAN-cfg-warm", "SWAN-FULL-cfg"]:
+        if s not in R:
+            continue
+        vals = sorted(R[s].keys())
+        _series(ax, vals, _floor([R[s][v]["pv"] for v in vals], None, [R[s][v]["arr"] for v in vals]), s)
+    ax.set_yscale("log"); ax.set_xlabel(r"Segment activation delay $\tau_{\rm cfg}$ (slots)"); ax.set_ylabel(r"$\Pr\{D>D_{\max}\}$")
+    ax.legend()
+    _save(fig, "fig_cfg")
+
+
+def fig_single(Ts=1e-4):
+    """Route A: analytical tail approximation versus simulation for one device in fixed SA mode."""
+    from src.tail_analysis import single_user_fixed_sa
+    from experiments.run_campaign import EXPERIMENTS
+    import json, glob
+    R = load("single")
+    fig, ax = plt.subplots(figsize=(W, H))
+    for s in ["SINGLE-SA", "SINGLE-TLA"]:
+        if s not in R:
+            continue
+        vals = sorted(R[s].keys())
+        _series(ax, vals, _floor([R[s][v]["pv"] for v in vals], None, [R[s][v]["arr"] for v in vals]), s)
+    # analytical curve: average over the drops of the fixed-SA runs (SNR from each run)
+    files = glob.glob(os.path.join(RESULTS, "single", "SINGLE-SA__*.json"))
+    approx = {}
+    for fn in files:
+        r = json.load(open(fn)); c = r["cfg"]
+        snr = 10 ** (r["snr_agg_dB"][0] / 10)
+        a = single_user_fixed_sa(c["h"], c["alpha"], c["beta"], c["Ts"], snr, c["n"], c["L"], c["bmax"], c["Dmax_slots"])
+        approx.setdefault(c["h"], []).append(a["pv_approx"])
+    hs = sorted(approx)
+    ax.plot(hs, [np.mean(approx[h]) for h in hs], "k-.", lw=1.0, label="Route-A approximation (fixed SA)")
+    ax.set_yscale("log"); ax.set_xlabel("Peak arrival rate $h$ (packets/slot)"); ax.set_ylabel(r"$\Pr\{D>D_{\max}\}$")
+    ax.legend()
+    _save(fig, "fig_single")
+
+
 def all_figures():
     done = []
     def safe(f, *a, **k):
@@ -186,6 +317,7 @@ def all_figures():
     safe(fig_hetero)
     safe(fig_bcd)
     safe(fig_placement_example)
+    safe(fig_key); safe(fig_energy); safe(fig_target); safe(fig_modes); safe(fig_fixedj); safe(fig_cfg); safe(fig_single)
     print("figures:", done)
 
 

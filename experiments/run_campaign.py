@@ -1,6 +1,6 @@
 """Experiment definitions and a resumable multiprocessing runner.
 
-Usage:  python -m sim.experiments --exp peak burst --procs 4 [--T-scale 0.5] [--seeds 4]
+Usage:  python -m experiments.run_campaign --exp peak burst --procs 4 [--T-scale 0.5] [--seeds 4]
 Results are stored as one JSON per (experiment, scheme, sweep value, seed) in
 results/<exp>/ so that partial runs can be resumed and pooled exactly.
 """
@@ -8,52 +8,102 @@ import argparse, json, os, time, glob
 from multiprocessing import Pool
 import numpy as np
 
-from .simulator import SimConfig, run_config
-from .placement import place_tapp
-from .swan import SWAN
+from src.simulator import SimConfig, run_config
+from src.arrivals import beta_for_activity
+from src.placement import place_tapp
+from src.swan_channel import SWAN
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 RESULTS = os.path.join(ROOT, "results")
 
 SCHEMES = {
+    # --- controllers on the adaptive SWAN (all SA depths and SM), TAPP placement
     "TLA-SWAN":      dict(arch="swan", placement="tapp", scheduler="tas"),
     "SWAN-MLWDF":    dict(arch="swan", placement="tapp", scheduler="mlwdf"),
     "SWAN-MW":       dict(arch="swan", placement="tapp", scheduler="mw"),
     "SWAN-EDF":      dict(arch="swan", placement="tapp", scheduler="edf"),
+    "SWAN-RATEMAX":  dict(arch="swan", placement="tapp", scheduler="ratemax"),
+    # --- placement / architecture benchmarks
     "SWAN-SR":       dict(arch="swan", placement="sumrate", scheduler="mw"),
     "SWAN-fixed":    dict(arch="swan", placement="center", scheduler="tas"),
     "SWAN-reactive": dict(arch="swan", placement="nearest", scheduler="tas", reactive=True),
     "PASS-1WG":      dict(arch="pass", placement="tapp", scheduler="tas"),
     "Fixed-array":   dict(arch="colocated", placement="center", scheduler="tas"),
+    # --- fixed SWAN modes (guide baselines 2-4)
+    "SWAN-SS":       dict(arch="swan", placement="tapp", scheduler="tas", mode="ss"),
+    "SWAN-SA":       dict(arch="swan", placement="tapp", scheduler="tas", mode="sa"),
+    "SWAN-FULL":     dict(arch="swan", placement="tapp", scheduler="tas", mode="full"),
 }
 MAIN5 = ["TLA-SWAN", "SWAN-MLWDF", "SWAN-MW", "SWAN-EDF", "SWAN-SR"]
 MAIN7 = MAIN5 + ["SWAN-fixed", "PASS-1WG"]
 ALL8 = MAIN7 + ["Fixed-array"]
+CTRL6 = ["TLA-SWAN", "SWAN-MLWDF", "SWAN-MW", "SWAN-RATEMAX", "SWAN-EDF", "SWAN-SA"]
+ENERGY = dict(Pc_W=0.1, rho_levels=(0.25, 0.5, 1.0))
 
 EXPERIMENTS = {
-    "ccdf":     dict(param=None, values=[None], schemes=ALL8, base=dict(Ddrop_slots=40), T=800_000, seeds=4),
-    "peak":     dict(param="h", values=[2.0, 2.5, 3.0, 3.5, 4.0], schemes=MAIN7, T=250_000, seeds=4),
-    "burst":    dict(param="alpha", values=[4000.0, 2000.0, 1000.0, 500.0, 250.0], schemes=MAIN5, T=250_000, seeds=4,
-                     derive=lambda v: dict(beta=v / 9.0)),
-    "power":    dict(param="Pmax_dBm", values=[-20.0, -15.0, -10.0, -5.0, 0.0], schemes=MAIN5 + ["Fixed-array"], T=250_000, seeds=4),
-    "segments": dict(param="M", values=[2, 4, 5, 8, 10], schemes=MAIN5 + ["PASS-1WG"], T=250_000, seeds=4,
+    # ---------------- campaign 1 (tail comparisons, no energy cost) ----------------
+    "ccdf":     dict(param=None, values=[None], schemes=ALL8, base=dict(Ddrop_slots=40), T=600_000, seeds=4),
+    "peak":     dict(param="h", values=[2.0, 2.5, 3.0, 3.5, 4.0], schemes=MAIN7, T=150_000, seeds=3),
+    "burst":    dict(param="alpha", values=[4000.0, 2000.0, 1000.0, 500.0, 250.0], schemes=MAIN5, T=150_000, seeds=3,
+                     derive=lambda v: dict(beta=float(beta_for_activity(v, 0.1, 1e-4)))),
+    "power":    dict(param="Pmax_dBm", values=[-20.0, -15.0, -10.0, -5.0, 0.0], schemes=MAIN5 + ["Fixed-array"], T=150_000, seeds=3),
+    "segments": dict(param="M", values=[2, 4, 5, 8, 10], schemes=MAIN5 + ["PASS-1WG"], T=150_000, seeds=3,
                      derive=lambda v: dict(Ls=40.0 / v)),
-    "dmax":     dict(param="Dmax_slots", values=[3, 5, 10, 20, 30], schemes=MAIN5, T=250_000, seeds=4,
+    "dmax":     dict(param="Dmax_slots", values=[3, 5, 10, 20, 30], schemes=MAIN5, T=150_000, seeds=3,
                      derive=lambda v: dict(Ddrop_slots=v)),
-    "users":    dict(param="K", values=[4, 6, 8, 10, 12], schemes=MAIN5, T=250_000, seeds=4),
+    "users":    dict(param="K", values=[4, 6, 8, 10, 12], schemes=MAIN5, T=150_000, seeds=3),
     "tau":      dict(param="tau_r_slots", values=[0, 1, 2, 5, 10], schemes=["TLA-SWAN", "SWAN-reactive", "SWAN-fixed"],
-                     T=150_000, seeds=4),
+                     T=100_000, seeds=3),
     "V":        dict(param="V", values=[0.0, 1e3, 3e3, 1e4, 3e4, 1e5], schemes=["TLA-SWAN"], T=250_000, seeds=4,
                      base=dict(rho_levels=(0.1, 0.2, 0.4, 0.7, 1.0))),
     "hetero":   dict(param="placement", values=["tapp", "sumrate", "maxmin", "center"], schemes=["TLA-SWAN"],
                      T=250_000, seeds=4, base=dict(n_crit=2, h_crit=4.0, delta_crit=1e-6)),
     "rician":   dict(param="rician_K", values=[np.inf, 100.0, 10.0, 3.0], schemes=["TLA-SWAN", "SWAN-MLWDF", "SWAN-MW"],
                      T=250_000, seeds=4),
-    "mismatch": dict(param="creq_scale", values=[0.5, 0.75, 1.0, 1.5, 2.0], schemes=["TLA-SWAN"], T=250_000, seeds=4),
-    "traffic":  dict(param="traffic", values=["onoff", "poisson", "periodic"], schemes=MAIN5, T=250_000, seeds=4,
+    "mismatch": dict(param="creq_scale", values=[0.5, 0.75, 1.0, 1.5, 2.0], schemes=["TLA-SWAN"], T=150_000, seeds=3),
+    "traffic":  dict(param="traffic", values=["onoff", "poisson", "periodic"], schemes=MAIN5, T=150_000, seeds=3,
                      base=dict(period_slots=20, batch=2, jitter_slots=2)),
-    "sharp":    dict(param="pkt_scale", values=[0.25, 0.5, 0.75, 1.0, 1.5], schemes=["TLA-SWAN"], T=250_000, seeds=4),
-    "credit":   dict(param="zeta", values=[0.0, 0.1, 0.25, 0.5, 1.0], schemes=["TLA-SWAN"], T=250_000, seeds=4),
+    "sharp":    dict(param="pkt_scale", values=[0.25, 0.5, 0.75, 1.0, 1.5], schemes=["TLA-SWAN"], T=150_000, seeds=3),
+    "credit":   dict(param="zeta", values=[0.0, 0.1, 0.25, 0.5, 1.0], schemes=["TLA-SWAN"], T=150_000, seeds=3),
+    # ---------------- campaign 2 (research-guide items) ----------------
+    # H1: mean delay vs tail for the same controllers, versus load (no dropping before 4 ms)
+    "key":      dict(param="h", values=[1.5, 2.0, 2.5, 3.0, 3.5, 4.0], schemes=CTRL6, T=150_000, seeds=4,
+                     base=dict(Ddrop_slots=40)),
+    # H2: energy/resource cost versus achieved tail with circuit power (V sweep) and versus the target
+    "energy":   dict(param="V", values=[0.0, 0.03, 0.1, 0.3, 1.0, 3.0], schemes=["TLA-SWAN", "SWAN-MW", "SWAN-RATEMAX"],
+                     T=150_000, seeds=4, base=ENERGY),
+    "target":   dict(param="delta", values=[1e-3, 1e-4, 1e-5, 1e-6, 1e-7], schemes=["TLA-SWAN"], T=150_000, seeds=4,
+                     base=dict(ENERGY, V=0.3)),
+    # H2/H4: fixed aggregation depth j under bursty and Poisson arrivals with equal mean rate
+    "fixedj":   dict(param="fixed_j", values=[1, 2, 3, 4], schemes=["SWAN-FIXJ-onoff", "SWAN-FIXJ-poisson"], T=150_000, seeds=4),
+    # configuration delay of segment activation (with lookahead), energy-aware controller
+    "cfg":      dict(param="tau_cfg", values=[0.0, 0.25, 0.5, 1.0, 2.0, 4.0], schemes=["TLA-SWAN-cfg", "TLA-SWAN-cfg-warm", "SWAN-FULL-cfg"],
+                     T=150_000, seeds=4),
+    # ablations
+    "ablation": dict(param="variant", values=["default", "shannon", "noloss", "poisson", "nocfg", "fullmode", "queueblind"],
+                     schemes=["TLA-SWAN-abl"], T=150_000, seeds=4),
+    # single device: Route-A validation (fixed SA, every slot) and proposed controller
+    "single":   dict(param="h", values=[3.0, 3.5, 4.0, 4.5, 5.0, 5.5], schemes=["SINGLE-SA", "SINGLE-TLA"], T=300_000, seeds=4,
+                     base=dict(K=1, Ddrop_slots=40, Pmax_dBm=-15.0)),
+}
+SCHEMES.update({
+    "SWAN-FIXJ-onoff":   dict(arch="swan", placement="tapp", scheduler="tas", mode="sa_j", traffic="onoff"),
+    "SWAN-FIXJ-poisson": dict(arch="swan", placement="tapp", scheduler="tas", mode="sa_j", traffic="poisson"),
+    "TLA-SWAN-cfg":      dict(arch="swan", placement="tapp", scheduler="tas", la=1.0, **ENERGY, V=0.3),
+    "TLA-SWAN-cfg-warm": dict(arch="swan", placement="tapp", scheduler="tas", la=1.0, keep_warm=True, **ENERGY, V=0.3),
+    "SWAN-FULL-cfg":     dict(arch="swan", placement="tapp", scheduler="tas", mode="full", keep_warm=True, **ENERGY, V=0.3),
+    "TLA-SWAN-abl":      dict(arch="swan", placement="tapp", scheduler="tas", **ENERGY, V=0.3),
+    "SINGLE-SA":         dict(arch="swan", placement="tapp", scheduler="tas", mode="sa"),
+    "SINGLE-TLA":        dict(arch="swan", placement="tapp", scheduler="tas"),
+})
+ABLATIONS = {
+    "default":    {},
+    "shannon":    dict(shannon=True),
+    "noloss":     dict(alpha_g_dBpm=0.0),
+    "poisson":    dict(traffic="poisson"),
+    "nocfg":      dict(tau_cfg=0.0),
+    "fullmode":   dict(mode="full"),
+    "queueblind": dict(scheduler="ratemax"),
 }
 
 
@@ -74,7 +124,10 @@ def make_jobs(exp, T_scale=1.0, seeds=None, procs_hint=4):
             for seed in range(nseeds):
                 kw = dict(SCHEMES[scheme])
                 kw.update(spec.get("base", {}))
-                if spec["param"] is not None:
+                if spec["param"] == "variant":
+                    kw.update(dict(tau_cfg=0.5, la=1.0))   # ablation reference: sub-slot activation delay with lookahead
+                    kw.update(ABLATIONS[v])
+                elif spec["param"] is not None:
                     kw[spec["param"]] = v
                     if "derive" in spec:
                         kw.update(spec["derive"](v))
@@ -90,7 +143,14 @@ def _run(job):
     if os.path.exists(out):
         return out, 0.0
     t0 = time.time()
-    res = run_config(SimConfig(**kw))
+    try:
+        res = run_config(SimConfig(**kw))
+    except Exception as ex:  # log and continue with the campaign
+        import traceback
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        with open(out + ".failed", "w") as f:
+            f.write(traceback.format_exc())
+        return out + ".failed", time.time() - t0
     res.update(scheme=scheme, exp=exp, value=None if v is None else (float(v) if isinstance(v, (int, float, np.floating)) else v), seed=seed)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out + ".tmp", "w") as f:
@@ -152,6 +212,11 @@ def load(exp):
         a["dropped"] = dropped if a["dropped"] is None else a["dropped"] + dropped
         a["power"].append(r["avg_power_W"])
         a["reconf"].append(r["reconf"])
+        a.setdefault("mode_hist", []).append(np.array(r.get("mode_hist", [])))
+        a.setdefault("nact", []).append(r.get("avg_nact", np.nan))
+        a.setdefault("activations", []).append(r.get("activations", np.nan))
+        a.setdefault("delivered_delay_sum", 0.0)
+        a["delivered_delay_sum"] += float((hist * np.arange(hist.shape[1])[None, :]).sum())
         a["viol_users"].append(viol)
         a["arr_users"].append(arr)
         a["n"] += 1
@@ -171,10 +236,18 @@ def load(exp):
             vc = sum(vu[:ncrit].sum() for vu in a["viol_users"]); ac = sum(au[:ncrit].sum() for au in a["arr_users"])
             vr = sum(vu[ncrit:].sum() for vu in a["viol_users"]); ar = sum(au[ncrit:].sum() for au in a["arr_users"])
             pv_crit, pv_reg = vc / max(ac, 1), vr / max(ar, 1)
+        from src.tail_analysis import percentiles_from_hist, cvar_from_hist
+        delivered = h.sum()
+        mean_delay = a["delivered_delay_sum"] / max(delivered, 1)
+        pct = percentiles_from_hist(h, drop, H)
+        mh = [m for m in a["mode_hist"] if m.size]
+        mode_hist = np.sum(mh, axis=0) if mh else None
         out.setdefault(scheme, {})[v] = dict(pv=tot_v / max(tot_a, 1), viol=float(tot_v), arr=float(tot_a),
                                              pv_worst=float(per_user_pv.max()), ccdf=ccdf,
                                              power_mW=1e3 * float(np.mean(a["power"])), reconf=float(np.mean(a["reconf"])),
-                                             n=a["n"], pv_crit=pv_crit, pv_reg=pv_reg)
+                                             n=a["n"], pv_crit=pv_crit, pv_reg=pv_reg, mean_delay=mean_delay,
+                                             pct=pct, cvar999=cvar_from_hist(h, drop, 0.999), mode_hist=mode_hist,
+                                             nact=float(np.nanmean(a["nact"])), activations=float(np.nanmean(a["activations"])))
     return out
 
 
