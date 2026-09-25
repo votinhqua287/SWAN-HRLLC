@@ -125,8 +125,10 @@ def fig_V():
 
 def fig_hetero():
     R = load("hetero")["TLA-SWAN"]
-    order = ["tapp", "sumrate", "maxmin", "center"]
-    labels = ["TAPP\n(proposed)", "Sum-rate", "Max-min\nrate", "Segment\ncentres"]
+    order = ["tapp", "tapp1", "tappM", "sumrate", "maxmin", "center"]
+    labels = ["TAPP\n($j_0=2$)", "TAPP\n($j_0=1$)", "TAPP\n($j_0=M$)", "Sum-rate", "Max-min\nrate", "Segment\ncentres"]
+    keep = [i for i, p in enumerate(order) if p in R]
+    order = [order[i] for i in keep]; labels = [labels[i] for i in keep]
     crit = [R[p]["pv_crit"] for p in order]
     reg = [R[p]["pv_reg"] for p in order]
     arr = [R[p]["arr"] for p in order]

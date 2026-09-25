@@ -2,7 +2,14 @@
 
 *Ngày đánh giá: 25/09/2026. Người đánh giá: Claude (trợ lý nghiên cứu), theo yêu cầu của tác giả chính.*
 
-> **Lưu ý quan trọng về nguồn dữ liệu.** File hướng dẫn gốc
+> **Cập nhật (sau khi nhận file guide).** File guide đã được đưa vào repo và đối chiếu (mục 9). Khung nghiên cứu, mã
+> nguồn và bản nháp đã được điều chỉnh theo guide: mô hình kích hoạt segment với năng lượng mạch và trễ cấu hình (H2),
+> mục tiêu năng lượng + chi phí cấu hình, đủ 8 baseline bắt buộc, các hình bắt buộc (mean delay vs tail, chọn chế độ theo
+> hàng đợi, năng lượng vs mục tiêu, Poisson vs bursty), ablation, kịch bản một thiết bị với xấp xỉ đuôi Route A, unit tests
+> và cấu trúc mã `src/…`. Guide ưu tiên TCOM (TWC là phương án thay thế); bản nháp hiện định dạng TWC, đổi sang TCOM chỉ cần
+> sửa dòng `\markboth`.
+>
+> **Lưu ý về nguồn dữ liệu ban đầu.** File hướng dẫn gốc
 > `D:\Research\SWAN-PASS-HRLLC\02_Tail_Latency_Aware_SWAN_HRLLC_Bursty_Traffic.md` nằm trên máy Windows
 > của bạn và **không được đính kèm** vào phiên làm việc từ xa này (repository trên GitHub trống hoàn toàn).
 > Toàn bộ khung nghiên cứu dưới đây được tôi tái dựng từ **tiêu đề** của guide (tail-latency-aware, SWAN, HRLLC,
@@ -103,3 +110,26 @@ Các mục **[To do]** trong `paper/main.tex` (chi tiết trong `docs/math_todo_
 2. Tuần 2–4: đồng nghiệp hoàn thiện L1, L2, P1, T1, T2 (thứ tự ưu tiên: L1 → T2 → T1 → P1 → L2).
 3. Tuần 4–5: ghép phần toán vào `paper/main.tex`, cập nhật hình với cận lý thuyết (Fig. so sánh cận T1 với mô phỏng).
 4. Tuần 6: rà soát, kiểm tra trích dẫn, nộp TWC.
+
+## 9. Đối chiếu với file guide (02_Tail_Latency_Aware_SWAN_HRLLC_Bursty_Traffic.md)
+
+| Mục guide | Trạng thái | Ghi chú |
+|---|---|---|
+| §2 câu hỏi nghiên cứu (chọn mode, active segments, power, service) | Đã có | Action $a_t=(\mathcal S,\mathcal A,\mathbf b,\rho)$ trong `src/service.py` + `src/controller.py` |
+| §3 H1–H4 | Có thí nghiệm tương ứng | `key` (H1), `energy`/`target`/`cfg`/`modes` (H2), toàn bộ so sánh (H3), `fixedj` + `ablation` (H4) |
+| §4 kiến trúc: 1 thiết bị trước, 2 lớp sau; SS/SA, SM nếu mô hình hóa RF chain | Đã có | `single` (K=1), `hetero` (2 lớp); SM có tính năng lượng mạch mỗi RF chain |
+| §5 lưu lượng Markov ON–OFF, Bernoulli/Poisson để kiểm chứng | Đã có | `src/arrivals.py`; self-similar chưa làm (tùy chọn) |
+| §6 hàng đợi, trễ = D_q + D_cfg + D_tx + D_proc | Đã có (D_proc = 0) | `src/queue.py`, `src/simulator.py` |
+| §7 mô hình dịch vụ SWAN có suy hao ống, không gian tự do, SNR theo segment, overhead cấu hình | Đã có | `src/swan_channel.py`, `src/service.py` |
+| §8 FBL | Đã có | `src/fbl.py` (có ablation Shannon) |
+| §9 metric đuôi: P(D>Dmax), p99…p99.999, CVaR, mean chỉ phụ | Đã có | `experiments/run_campaign.py::load`, `src/tail_analysis.py` |
+| §10 route phân tích A/B/C | Route A số học đã có; chứng minh do đồng nghiệp | `src/tail_analysis.py`; Lemma 1, Theorem 2 [To do] |
+| §11 bài toán tối ưu năng lượng + cấu hình s.t. đuôi | Đã có | (P1) trong bài |
+| §12 controller Stage A–D | Đã có | bảng hành động offline (A), trạng thái hàng đợi/kênh/mode (B), điểm rủi ro = thế năng đuôi (C), drift-plus-penalty (D); DRL (E) không làm |
+| §13 8 baseline | Đủ | conventional PASS, fixed SS, fixed SA, full activation, rate-max, MW (avg-delay), MW+V (queue-aware non-tail), proposed |
+| §14 tham số | Trong khoảng khuyến nghị | M 2–10, 32 byte, slot 0.1 ms, deadline 0.3–3 ms, mục tiêu 1e-3–1e-7 |
+| §15–16 hình bắt buộc | Có 10/10 | xem `experiments/plots.py` |
+| §17 ablation | Có | Bernoulli/bursty, không trễ cấu hình, Shannon/FBL, không suy hao ống, mode cố định, queue-blind, tail-aware vs average-aware |
+| §18 cấu trúc mã | Theo guide | `src/`, `experiments/`, `tests/`, `results/`, `paper/figures/` |
+| §19 unit tests | 9 test, pass | `tests/test_basic.py` |
+| §21 GO/NO-GO | Đánh giá sau khi có kết quả campaign | xem mục "Kết quả" trong bài |

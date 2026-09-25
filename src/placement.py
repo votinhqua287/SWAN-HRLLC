@@ -10,10 +10,15 @@ import numpy as np
 from .fbl import fbl_rate
 
 
-def agg_rate_packets(sw, users, pa_x, n, eps0, L):
-    """Aggregation-mode FBL rate of every user in packets/slot."""
+def agg_rate_packets(sw, users, pa_x, n, eps0, L, j=None):
+    """FBL rate (packets/slot) of every user when served by its j strongest
+    segments in aggregation mode (j=None: all segments)."""
     H = sw.los_channel(users, pa_x)
-    g = sw.agg_snr(H)
+    if j is None or j >= sw.M:
+        g = sw.agg_snr(H)
+    else:
+        a = np.sort(np.abs(H), axis=1)[:, ::-1][:, :j].sum(axis=1)
+        g = sw.Pmax * a ** 2 / sw.sigma2
     return n * fbl_rate(n, eps0, g) / L
 
 
@@ -41,12 +46,13 @@ def _bcd(sw, users, objective, x_init, grid=200, max_iter=30, tol=1e-9):
     return x, best, np.array(hist)
 
 
-def place_tapp(sw, users, c_req, n, eps0, L, grid=200, x_init=None, return_hist=False):
-    """Tail-aware placement: max_x min_k R_k^agg(x)/c_req_k."""
+def place_tapp(sw, users, c_req, n, eps0, L, grid=200, x_init=None, return_hist=False, j=None):
+    """Tail-aware placement: max_x min_k R_k^(j)(x)/c_req_k, with R^(j) the rate
+    from the j strongest segments (j=None: full aggregation)."""
     c_req = np.asarray(c_req, float)
 
     def obj(x):
-        return np.min(agg_rate_packets(sw, users, x, n, eps0, L) / c_req)
+        return np.min(agg_rate_packets(sw, users, x, n, eps0, L, j) / c_req)
 
     x0 = sw.x0 + sw.Ls / 2 if x_init is None else x_init
     x, best, hist = _bcd(sw, users, obj, x0, grid)

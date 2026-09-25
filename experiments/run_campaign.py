@@ -56,7 +56,7 @@ EXPERIMENTS = {
                      T=100_000, seeds=3),
     "V":        dict(param="V", values=[0.0, 1e3, 3e3, 1e4, 3e4, 1e5], schemes=["TLA-SWAN"], T=250_000, seeds=4,
                      base=dict(rho_levels=(0.1, 0.2, 0.4, 0.7, 1.0))),
-    "hetero":   dict(param="placement", values=["tapp", "sumrate", "maxmin", "center"], schemes=["TLA-SWAN"],
+    "hetero":   dict(param="placement", values=["tapp", "tapp1", "tappM", "sumrate", "maxmin", "center"], schemes=["TLA-SWAN"],
                      T=250_000, seeds=4, base=dict(n_crit=2, h_crit=4.0, delta_crit=1e-6)),
     "rician":   dict(param="rician_K", values=[np.inf, 100.0, 10.0, 3.0], schemes=["TLA-SWAN", "SWAN-MLWDF", "SWAN-MW"],
                      T=250_000, seeds=4),
@@ -127,6 +127,8 @@ def make_jobs(exp, T_scale=1.0, seeds=None, procs_hint=4):
                 if spec["param"] == "variant":
                     kw.update(dict(tau_cfg=0.5, la=1.0))   # ablation reference: sub-slot activation delay with lookahead
                     kw.update(ABLATIONS[v])
+                elif spec["param"] == "placement" and isinstance(v, str) and v.startswith("tapp") and len(v) > 4:
+                    kw["placement"] = "tapp"; kw["tapp_j"] = {"tapp1": 1, "tapp2": 2, "tappM": 0}[v]
                 elif spec["param"] is not None:
                     kw[spec["param"]] = v
                     if "derive" in spec:
@@ -176,7 +178,7 @@ def run_experiments(exps, procs=4, T_scale=1.0, seeds=None):
 def run_bcd(seeds=(0, 1, 2, 3, 4), grid=200):
     """Convergence histories of the TAPP block-coordinate descent."""
     cfg = SimConfig()
-    from .simulator import required_rate
+    from src.simulator import required_rate
     out = {}
     for s in seeds:
         rng = np.random.default_rng(1000 + s)
@@ -185,7 +187,7 @@ def run_bcd(seeds=(0, 1, 2, 3, 4), grid=200):
         users = sw.drop_users(cfg.K, rng)
         c2 = SimConfig(n_crit=2, h_crit=4.0, delta_crit=1e-6)
         creq = required_rate(c2)
-        x, best, hist = place_tapp(sw, users, creq, cfg.n, cfg.eps0, cfg.L, grid=grid, return_hist=True)
+        x, best, hist = place_tapp(sw, users, creq, cfg.n, cfg.eps0, cfg.L, grid=grid, return_hist=True, j=(cfg.tapp_j or None))
         out[str(s)] = dict(hist=hist.tolist(), x=x.tolist(), users=users.tolist(), creq=creq.tolist())
     os.makedirs(os.path.join(RESULTS, "bcd"), exist_ok=True)
     with open(os.path.join(RESULTS, "bcd", "bcd.json"), "w") as f:

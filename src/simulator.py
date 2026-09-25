@@ -64,6 +64,7 @@ class SimConfig:
     # --- architecture / placement
     arch: str = "swan"       # swan | pass | colocated
     placement: str = "tapp"  # tapp | sumrate | center | nearest | maxmin
+    tapp_j: int = 2          # aggregation depth j0 used in the TAPP margin (0 = all segments)
     reactive: bool = False
     tau_r_slots: int = 1
     creq_scale: float = 1.0
@@ -166,7 +167,7 @@ class Simulator:
         if cfg.arch == "colocated" or cfg.placement == "center":
             return place_center(sw)
         if cfg.placement == "tapp":
-            return place_tapp(sw, U, self.creq, cfg.n, cfg.eps0, cfg.L)
+            return place_tapp(sw, U, self.creq, cfg.n, cfg.eps0, cfg.L, j=(cfg.tapp_j or None))
         if cfg.placement == "sumrate":
             return place_sumrate(sw, U, cfg.n, cfg.eps0, cfg.L)
         if cfg.placement == "maxmin":

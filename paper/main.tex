@@ -226,8 +226,8 @@ Problem (P1) is a constrained Markov decision problem with a continuous geometri
 \node[box, fill=blue!6, text width=3.1cm] (stat) {Traffic statistics $(h_k,\alpha_k,\beta_k)$\\ tail targets $(\Dmax,\delta_k)$};
 \node[box, fill=blue!6, text width=2.6cm, right=of stat] (creq) {Tail exponents $\Lambda_k$,\\ required rates $\creqk{k}$ (Lemma~\ref{lem:creq})};
 \node[box, fill=orange!10, text width=3.1cm, below=of stat] (tapp) {\textbf{Algorithm~1: TAPP}\\ PA positions $\vect x^\star$ (per frame)};
-\node[box, fill=orange!10, text width=2.6cm, right=of tapp] (tab) {ZF/EGT tables\\ $p(\Sset)$, $P_{\mathrm{tot}}(\Sset)$, $\varepsilon(b,\cdot)$};
-\node[box, fill=green!8, text width=6.3cm, below=of tapp, xshift=1.4cm] (tas) {\textbf{Algorithm~2: TAS} (per slot)\\ packet values $v_k(a)$, tail-risk potential $\Phi$ $\to$ subset $\Sset^\star$ (SA/SM), packets $\vect b^\star$, power $\rho^\star$};
+\node[box, fill=orange!10, text width=2.6cm, right=of tapp] (tab) {Action tables\\ SNR, $P^{\mathrm{tx}}$, $\mathcal A$, $\varepsilon(b,\cdot)$};
+\node[box, fill=green!8, text width=6.3cm, below=of tapp, xshift=1.4cm] (tas) {\textbf{Algorithm~2: TAS} (per slot)\\ packet values $v_k(a)$, tail-risk potential $\Phi$, energy/configuration penalty $\to$ users $\Sset^\star$, active segments $\mathcal A^\star$ (SS/SA/SM), packets $\vect b^\star$, power $\rho^\star$};
 \node[box, fill=gray!8, text width=6.3cm, below=of tas] (phy) {SWAN downlink: FBL transmission, ACK/NACK, deadline dropping};
 \draw[-{Latex[length=1.5mm]}] (stat) -- (creq);
 \draw[-{Latex[length=1.5mm]}] (creq) -- (tapp);
@@ -272,15 +272,15 @@ The required rate has the expected limits: $\creq\to\bar\lambda$ when $\Lambda\t
 \end{figure}
 
 \subsection{Frame Timescale: Tail-Aware PA Placement (TAPP)}\label{sec:tapp}
-A burst of user $k$ is drained fastest when the SWAN aggregates all segments towards $k$, so the SA rate is the relevant capacity for the delay tail. Let
+A burst of user $k$ is drained by aggregating segments towards $k$, so an aggregation-mode rate is the relevant capacity for the delay tail. Because the gain of segment $m$ at user $k$ decays as $r_{k,m}^{-2}$, most of the aggregation gain comes from the few segments closest to the user, and using all $M$ segments in the placement objective would pull every PA towards the single worst user and strip the other users of their nearby PAs (Section~\ref{sec:results} quantifies this). We therefore measure the drain capacity of user $k$ with its $j_0$ strongest segments, $j_0\in\{1,\dots,M\}$ ($j_0=2$ by default):
 \begin{equation}\label{eq:Rsa}
-R_k^{\mathrm{SA}}(\vect x)=\frac{n}{L}\Big[\log_2\!\big(1+\gamma_k^{\mathrm{SA}}(\vect x,1)\big)-\sqrt{\tfrac{V(\gamma_k^{\mathrm{SA}})}{n}}\,Q^{-1}(\varepsilon_0)+\tfrac{\log_2 n}{2n}\Big]
+R_k^{(j_0)}(\vect x)=\frac{n}{L}\Big[\log_2\!\big(1+\gamma_k^{\mathrm{SA}}(\vect x,j_0,1)\big)-\sqrt{\tfrac{V(\gamma_k^{\mathrm{SA}})}{n}}\,Q^{-1}(\varepsilon_0)+\tfrac{\log_2 n}{2n}\Big],
 \end{equation}
-be the FBL rate of user $k$ in packets per slot at the nominal reliability $\varepsilon_0$ \cite{Polyanskiy2010}. We define the \emph{tail-latency margin} of user $k$ as $\Gamma_k(\vect x)=R_k^{\mathrm{SA}}(\vect x)/\creqk{k}$: a margin below one means that even exclusive service cannot meet the tail target, while a large margin leaves room for multiplexing with other users. TAPP maximizes the worst margin,
+the FBL rate of user $k$ in packets per slot at the nominal reliability $\varepsilon_0$ \cite{Polyanskiy2010}, with $\gamma_k^{\mathrm{SA}}(\vect x,j_0,1)$ from \eqref{eq:snr_sa}; $R_k^{\mathrm{SA}}\triangleq R_k^{(M)}$ is the full-aggregation rate. We define the \emph{tail-latency margin} of user $k$ as $\Gamma_k(\vect x)=R_k^{(j_0)}(\vect x)/\creqk{k}$: a margin below one means that even exclusive service by its $j_0$ best segments cannot meet the tail target, while a large margin leaves room for multiplexing with other users. TAPP maximizes the worst margin,
 \begin{equation}\label{eq:P2}
-\text{(P2)}\quad\max_{\vect x\in\mathcal X_1\times\dots\times\mathcal X_M}\ \min_{k\in\Kset}\ \frac{R_k^{\mathrm{SA}}(\vect x)}{\creqk{k}}.
+\text{(P2)}\quad\max_{\vect x\in\mathcal X_1\times\dots\times\mathcal X_M}\ \min_{k\in\Kset}\ \frac{R_k^{(j_0)}(\vect x)}{\creqk{k}}.
 \end{equation}
-Problem (P2) is non-convex and non-smooth, but each coordinate $x_m$ enters $\gamma_k^{\mathrm{SA}}$ only through $|h_{k,m}(x_m)|=\sqrt\eta e^{-\alpha_g\ell_m}/r_{k,m}$, a smooth one-dimensional function on the interval $\mathcal X_m$. This structure suggests block-coordinate descent (BCD) with an exact one-dimensional search per block, as in Algorithm~\ref{alg:tapp}. The one-dimensional problem is solved by a grid of $G$ points followed by local refinement; for a single dominant user per segment it has a closed form.
+Problem (P2) is non-convex and non-smooth, but each coordinate $x_m$ enters $\gamma_k^{\mathrm{SA}}(\vect x,j_0,1)$ only through $|h_{k,m}(x_m)|=\sqrt\eta e^{-\alpha_g\ell_m}/r_{k,m}$, a smooth one-dimensional function on the interval $\mathcal X_m$ (and through the selection of the $j_0$ strongest segments, which is piecewise constant). This structure suggests block-coordinate descent (BCD) with an exact one-dimensional search per block, as in Algorithm~\ref{alg:tapp}. The one-dimensional problem is solved by a grid of $G$ points followed by local refinement; for a single dominant user per segment it has a closed form.
 
 \begin{algorithm}[t]
 \caption{Tail-Aware PA Placement (TAPP), executed once per frame}
@@ -306,12 +306,12 @@ $x_m^\star=\Pi_{\mathcal X_m}\big(x_k-\zeta_m\big)$ with $\zeta_m\ge0$ solving a
 \todobox{Co-author: derive Lemma~\ref{lem:single} in Appendix~B from $\partial|h_{k,m}|^2/\partial x_m=0$ (with and without $\alpha_g$) and from $\Gamma_k(\vect x)=\Gamma_j(\vect x)$ using the monotonicity of $R^{\mathrm{SA}}$ in $\gamma$; give the explicit coefficients.}
 
 \begin{proposition}[Convergence and complexity of TAPP]\label{prop:tapp}
-The sequence of objective values generated by Algorithm~\ref{alg:tapp} is non-decreasing and bounded, hence convergent, and the algorithm terminates after a finite number of sweeps for any $\xi>0$. Each sweep costs $O(MGK)$ evaluations of \eqref{eq:Rsa}, and the output is a coordinate-wise optimal point of (P2) on the grid.
+The sequence of objective values generated by Algorithm~\ref{alg:tapp} is non-decreasing and bounded, hence convergent, and the algorithm terminates after a finite number of sweeps for any $\xi>0$. Each sweep costs $O(MGK)$ evaluations of \eqref{eq:Rsa}, and the output is a coordinate-wise optimal point of (P2) on the grid; in all our experiments the algorithm converges in two to four sweeps.
 \end{proposition}
 \todobox{Co-author: prove Proposition~\ref{prop:tapp} in Appendix~C (monotone bounded sequence; finiteness from $\xi$ and the boundedness of the objective by $\max_k R_k^{\mathrm{SA}}/\creqk{k}$ evaluated at $r_{k,m}=d$); discuss whether a limit point in the continuous domain is a stationary point of the max-min objective.}
 
 \begin{remark}
-TAPP differs from rate-maximizing placement in two ways. It is max-min rather than sum, so no user is sacrificed, and the margins are normalized by $\creqk{k}$, so a critical or bursty user attracts PAs even if its channel is already good. In the homogeneous case ($\creqk{k}=\creq$ for all $k$) TAPP reduces to max-min SA-rate placement; the difference becomes visible with heterogeneous classes (Section~\ref{sec:results}).
+TAPP differs from rate-maximizing placement in two ways. It is max-min rather than sum, so no user is sacrificed, and the margins are normalized by $\creqk{k}$, so a critical or bursty user attracts PAs even if its channel is already good. In the homogeneous case ($\creqk{k}=\creq$ for all $k$) TAPP reduces to max-min placement of the $j_0$-segment rate; the difference becomes visible with heterogeneous classes (Section~\ref{sec:results}). The depth $j_0$ trades coverage against aggregation: $j_0=1$ places each PA above the users it serves alone, $j_0=M$ concentrates the PAs, and $j_0=2$ was found to be a robust compromise.
 \end{remark}
 
 \subsection{Slot Timescale: Tail-Aware Scheduling (TAS)}\label{sec:tas}
@@ -544,7 +544,7 @@ The following schemes are compared.
 \centering
 \begin{subfigure}[t]{0.49\columnwidth}
 \includegraphics[width=\linewidth]{fig_hetero}
-\caption{per-class violation probability for four placement rules (TAS scheduling).}
+\caption{per-class violation probability for six placement rules (TAS scheduling).}
 \label{fig:hetero}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.49\columnwidth}
@@ -552,26 +552,17 @@ The following schemes are compared.
 \caption{convergence of the TAPP objective for five user drops.}
 \label{fig:bcd}
 \end{subfigure}
-\caption{Tail-aware placement with two critical users ($h=4$, $\delta=10^{-6}$) and six regular users.}
+\caption{Tail-aware placement with two critical users ($h=4$, $\delta=10^{-6}$) and six regular users; TAPP is shown for three aggregation depths $j_0$.}
 \label{fig:placement}
 \end{figure}
 %%DISC-PLACEMENT%%
 
-\subsection{Reconfiguration Delay and Power--Tail Trade-off}
+\subsection{Reactive Versus Statistical PA Repositioning}
 \begin{figure}[t]
 \centering
-\begin{subfigure}[t]{0.49\columnwidth}
-\includegraphics[width=\linewidth]{fig_tau}
-\caption{versus the reconfiguration delay $\tau_r$.}
+\includegraphics[width=0.9\columnwidth]{fig_tau}
+\caption{Delay-violation probability versus the PA repositioning delay $\tau_r$: frame-level TAPP placement (proposed), fixed PAs, and per-slot reactive repositioning.}
 \label{fig:tau}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.49\columnwidth}
-\includegraphics[width=\linewidth]{fig_V}
-\caption{power--tail trade-off of TLA-SWAN for increasing $V$.}
-\label{fig:V}
-\end{subfigure}
-\caption{Cost of reactive repositioning and the trade-off controlled by the penalty parameter $V$.}
-\label{fig:tauV}
 \end{figure}
 %%DISC-TAUV%%
 

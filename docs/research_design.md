@@ -67,8 +67,10 @@ $$c_{\rm req}=h\,\frac{\beta+\Lambda}{\alpha+\beta+\Lambda},\qquad \Lambda=\frac
 ($\Lambda\to0$: mean rate; $\Lambda\to\infty$: peak rate.) Implemented in `traffic.required_rate_onoff`.
 
 ### 3.2 Algorithm 1 — Tail-Aware PA Placement (TAPP), frame level
-Maximise the minimum tail-latency margin $\min_k R_k^{\rm SA}(\mathbf x)/c_{{\rm req},k}$, where
-$R_k^{\rm SA}$ is the FBL rate (packets/slot) of user $k$ in aggregation mode. Block-coordinate
+Maximise the minimum tail-latency margin $\min_k R_k^{(j_0)}(\mathbf x)/c_{{\rm req},k}$, where
+$R_k^{(j_0)}$ is the FBL rate (packets/slot) of user $k$ aggregated over its $j_0$ strongest segments
+($j_0=2$ by default; $j_0=M$ concentrates all PAs on the worst user and was measured to be worse, see the
+placement study in `scratchpad/cmp_place` and experiment `hetero`). Block-coordinate
 descent over segments, each block solved by a 1-D grid search (G points) on $\mathcal X_m$;
 stop when no block improves. Complexity $O(I\,M\,G\,K)$. Outputs $\mathbf x^\star$ per frame.
 Benchmarks: sum-rate placement, tail-agnostic max-min rate, nearest-user projection, segment centres.
