@@ -117,3 +117,15 @@ $c_{\rm req}$ mismatch, traffic model); E13 sensitivity to $\kappa$ and to the o
 guide items: `key` (mean delay vs tail, H1), `energy`/`target`/`cfg` (H2), `fixedj` (H4), `ablation`, `single` (Route-A validation). Default: $M=4$, $L_s=10$ m, $d=3$ m, $D_y=10$ m, $K=8$,
 $f_c=28$ GHz, $n_{\rm eff}=1.4$, $\kappa=0.08$ dB/m, $\sigma^2=-101$ dBm, $P_{\max}=-10$ dBm,
 $L=256$ bits, $D_{\max}=1$ ms, $\delta=10^{-5}$, ON 1 ms / OFF 9 ms, $h=3$ packets/slot.
+
+## 6. Campaign results (25 Sep 2026) — see `paper/main.tex` Section V and `docs/feasibility_assessment_vi.md` §10
+* H1 (mean vs tail): at $h=2$ all channel-aware controllers have the same mean delay (0.11 ms) but $P(D>1\,\text{ms})$ spans
+  $<10^{-6}$ (TLA-SWAN) to $1.7\times10^{-4}$ (rate-max).
+* H2 (activation/energy/config): at equal tail ($4.4\times10^{-3}$) TLA-SWAN uses 94 mW vs 150 mW (max-weight); modes shift
+  SS → SA/SM with the backlog; sub-slot activation delays cost 1.6–2.4× in the tail, multi-slot delays 8–30×.
+* H3: 1.2–1.8× over M-LWDF, 2.6–70× over max-weight depending on the operating point; robust to Rician fading and
+  to a factor-2 mismatch of the required rates.
+* H4: Poisson arrivals of equal mean give no violation for any controller; optimal fixed aggregation depth $j=2$ (Poisson)
+  vs $j=M$ (ON–OFF).
+* Route-A validation (single device, fixed SA): effective-bandwidth approximation within a factor 2.5 of simulation.
+* Placement (16 drops, heterogeneous): tail-load TAPP $3.3\times10^{-3}$ vs sum-rate $4.9\times10^{-3}$, max-min $5.4\times10^{-3}$, centres $5.8\times10^{-3}$.

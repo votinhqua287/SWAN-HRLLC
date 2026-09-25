@@ -48,3 +48,15 @@ python -m experiments.run_campaign --exp peak burst --T-scale 0.4 --seeds 2
 ```bash
 cd paper && pdflatex main && bibtex main && pdflatex main && pdflatex main
 ```
+
+## Results at a glance (default parameters, see the paper for details)
+
+| Metric | TLA-SWAN | M-LWDF | max-weight | sum-rate + MW | single-waveguide PASS |
+|---|---|---|---|---|---|
+| $P(D>1\,\text{ms})$, CCDF setting | $2.7\times10^{-3}$ | $3.4\times10^{-3}$ | $7.1\times10^{-3}$ | $1.3\times10^{-2}$ | $1.1\times10^{-1}$ |
+| $P(D>1\,\text{ms})$ at $h=2$ (deadline dropping) | $<10^{-6}$ | $1.1\times10^{-5}$ | $1.4\times10^{-4}$ | $4.3\times10^{-4}$ | $3.4\times10^{-3}$ |
+| Power for tail $4.4\times10^{-3}$ ($P_c=100$ mW) | $94$ mW | – | $150$ mW | – | – |
+| Min. power to meet $10^{-5}$ at $h=2$ | $66$ mW | – | not reachable | – | – |
+
+Every figure of the paper is reproduced by `python -m experiments.run_campaign` (≈5 h on 4 cores) followed by
+`python -m experiments.plots`; `python -m experiments.summarize` prints the pooled numbers.

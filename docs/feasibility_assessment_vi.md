@@ -133,3 +133,17 @@ Các mục **[To do]** trong `paper/main.tex` (chi tiết trong `docs/math_todo_
 | §18 cấu trúc mã | Theo guide | `src/`, `experiments/`, `tests/`, `results/`, `paper/figures/` |
 | §19 unit tests | 9 test, pass | `tests/test_basic.py` |
 | §21 GO/NO-GO | Đánh giá sau khi có kết quả campaign | xem mục "Kết quả" trong bài |
+
+## 10. Kết quả chính của campaign mô phỏng (đánh giá GO/NO-GO theo §21 của guide)
+
+Tham số mặc định: $M=4$, $K=8$, $P_{\max}=-10$ dBm, ON–OFF đỉnh $h=3$ gói/slot, burst 1 ms, activity 0.1, $D_{\max}=1$ ms.
+
+| Tiêu chí GO/NO-GO | Bằng chứng | Kết luận |
+|---|---|---|
+| Burstiness thay đổi chính sách tối ưu | Poisson cùng tải trung bình: 0 vi phạm cho mọi controller (1.1M gói); ON–OFF: $5\times10^{-3}$ (MW), $1.2\times10^{-3}$ (TLA). Độ sâu gộp tối ưu: $j=2$ với Poisson, $j=M$ với ON–OFF (Fig. fixedj) | **GO** |
+| Cải thiện đuôi, không chỉ trễ trung bình | Fig. key: tại $h=2$ trễ trung bình bằng nhau (0.11 ms) nhưng $P(D>1\,\text{ms})$: TLA 0 vs MW $1.1\times10^{-4}$, rate-max $1.7\times10^{-4}$; CCDF: TLA $2.7\times10^{-3}$ vs MW $7.1\times10^{-3}$ vs sum-rate $1.3\times10^{-2}$ | **GO** |
+| Overhead cấu hình tạo trade-off SWAN thật | Năng lượng: cùng đuôi $4.4\times10^{-3}$, TLA cần 94 mW vs MW 138 mW; trễ kích hoạt $\tau_{\rm cfg}$ 0→4 slot làm đuôi tăng $2.5\times10^{-3}\to8\times10^{-2}$; reactive repositioning tệ hơn TAPP ngay cả khi $\tau_r=0$ và giảm 30× tại $\tau_r=1$ ms | **GO** |
+| Biểu thức đuôi giải tích khớp mô phỏng | Một thiết bị, SA cố định: xấp xỉ EB/EC khớp mô phỏng trong hệ số ≤2.5 trên 4 bậc độ lớn (Fig. single) | **GO** (chứng minh: đồng nghiệp) |
+| Lợi ích bền qua nhiều tải/burst | TLA tốt hơn MW 2.4–50× trên $K=4..12$, 1.5–500× trên burst 4→0.25 ms, 4–70× trên $P_{\max}=-10..-5$ dBm; robust với Rician (K=5 dB: $3.6\times10^{-3}$ vs LoS $1.0\times10^{-3}$, vẫn tốt nhất) | **GO** |
+
+Điểm cần lưu ý khi viết/bảo vệ: (i) so với M-LWDF (bộ lập lịch nhạy đuôi kinh điển) lợi ích của TAS là 1.2–1.8× (đôi khi ngang ở tải rất cao) — đóng góp chính nằm ở kết hợp đặt PA theo tail load + chọn segment/mode theo năng lượng + FBL bundling; (ii) đặt PA nhạy với hình học drop, cần ≥16 drop để so sánh (đã làm); (iii) biến thể tín dụng $Z_k$ và chuẩn hóa PF không cải thiện (đã báo cáo trong bảng độ nhạy).

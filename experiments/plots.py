@@ -83,7 +83,7 @@ def fig_ccdf(Ts=1e-4):
 
 
 def fig_sweep(exp, xlabel, name, schemes=None, xscale="linear", xfun=None, ylabel=r"Delay-violation probability $\Pr\{D>D_{\max}\}$",
-              metric="pv", legend_loc="best", target=None):
+              metric="pv", legend_loc="best", target=None, xticks=None):
     R = load(exp)
     fig, ax = plt.subplots(figsize=(W, H))
     schemes = schemes or [k for k in STYLE if k in R]
@@ -102,6 +102,8 @@ def fig_sweep(exp, xlabel, name, schemes=None, xscale="linear", xfun=None, ylabe
         ax.axhline(target, color="0.4", lw=0.7, ls="--")
         ax.text(ax.get_xlim()[0], target * 1.3, r"target $\delta$", fontsize=7, color="0.3")
     ax.set_xscale(xscale)
+    if xticks is not None:
+        ax.set_xticks(xticks); ax.set_xticklabels([f"{t:g}" for t in xticks]); ax.minorticks_off()
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.legend(loc=legend_loc)
@@ -259,7 +261,7 @@ def fig_modes():
     R = load("energy")["TLA-SWAN"]
     v = 0.3 if 0.3 in R else sorted(R.keys())[len(R) // 2]
     mh = R[v]["mode_hist"]
-    tot = mh.sum(axis=0); mask = tot > 200
+    tot = mh.sum(axis=0); mask = (tot > 200) & (np.arange(mh.shape[1]) >= 1)
     q = np.arange(mh.shape[1])[mask]
     fig, ax = plt.subplots(figsize=(W, H))
     names = ["idle", "SS ($j=1$)", "SA ($1<j<M$)", "SA ($j=M$)", "SM"]
@@ -346,14 +348,14 @@ def all_figures():
             print("skip", f.__name__, a[:1], "->", e)
     safe(fig_ccdf)
     safe(fig_sweep, "peak", "Peak arrival rate $h$ (packets/slot)", "fig_peak")
-    safe(fig_sweep, "burst", r"Mean burst duration $1/\alpha$ (ms)", "fig_burst", xfun=lambda a: 1e3 / a, xscale="log")
+    safe(fig_sweep, "burst", r"Mean burst duration $1/\alpha$ (ms)", "fig_burst", xfun=lambda a: 1e3 / a, xscale="log", xticks=[0.25, 0.5, 1, 2, 4])
     safe(fig_sweep, "power", r"Per-segment transmit power $P_{\max}$ (dBm)", "fig_power")
     safe(fig_sweep, "segments", "Number of segments $M$ ($D_x = 40$ m)", "fig_segments")
     safe(fig_sweep, "dmax", r"Latency budget $D_{\max}$ (ms)", "fig_dmax", xfun=lambda v: v * 0.1)
     safe(fig_sweep, "users", "Number of users $K$", "fig_users")
     safe(fig_sweep, "tau", r"Reconfiguration delay $\tau_r$ (slots)", "fig_tau")
     safe(fig_sweep, "rician", "Rician factor (dB)", "fig_rician", xfun=lambda v: 60 if np.isinf(v) else 10 * np.log10(v))
-    safe(fig_sweep, "mismatch", r"Mismatch factor on the critical users' $c_{\rm req}$", "fig_mismatch", xscale="log")
+    safe(fig_sweep, "mismatch", r"Mismatch factor on the critical users' $c_{\rm req}$", "fig_mismatch", xscale="log", xticks=[0.25, 0.5, 1, 2, 4])
     safe(fig_V)
     safe(fig_hetero)
     safe(fig_bcd)
