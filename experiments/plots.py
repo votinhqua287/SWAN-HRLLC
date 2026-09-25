@@ -125,8 +125,8 @@ def fig_V():
 
 def fig_hetero():
     R = load("hetero")["TLA-SWAN"]
-    order = ["tapp", "tapp1", "tappM", "sumrate", "maxmin", "center"]
-    labels = ["TAPP\n($j_0=2$)", "TAPP\n($j_0=1$)", "TAPP\n($j_0=M$)", "Sum-rate", "Max-min\nrate", "Segment\ncentres"]
+    order = ["tapp", "tapp1", "tappM", "tappmm", "sumrate", "maxmin", "center"]
+    labels = ["TAPP\n($j_0=2$)", "TAPP\n($j_0=1$)", "TAPP\n($j_0=M$)", "weighted\nmax-min", "Sum-rate", "Max-min\nrate", "Segment\ncentres"]
     keep = [i for i, p in enumerate(order) if p in R]
     order = [order[i] for i in keep]; labels = [labels[i] for i in keep]
     crit = [R[p]["pv_crit"] for p in order]
@@ -134,7 +134,7 @@ def fig_hetero():
     arr = [R[p]["arr"] for p in order]
     crit = _floor(crit, None, arr); reg = _floor(reg, None, arr)
     x = np.arange(len(order)); w = 0.36
-    fig, ax = plt.subplots(figsize=(W, H))
+    fig, ax = plt.subplots(figsize=(W + 0.6, H))
     ax.bar(x - w / 2, crit, w, color=PALETTE[0], label=r"critical users ($\delta=10^{-6}$)")
     ax.bar(x + w / 2, reg, w, color=PALETTE[1], label=r"regular users ($\delta=10^{-5}$)", hatch="///", edgecolor="white")
     ax.set_yscale("log")
@@ -153,7 +153,7 @@ def fig_bcd():
         h = np.array(d["hist"])
         ax.plot(np.arange(h.size), h, marker="o", markerfacecolor="white", color=PALETTE[i % 8], label=f"drop {int(s)+1}")
     ax.set_xlabel("BCD iteration")
-    ax.set_ylabel(r"Tail-latency margin $\min_k R_k^{\rm SA}/c_{{\rm req},k}$")
+    ax.set_ylabel(r"Tail load $\sum_k c_{{\rm req},k}/R_k^{(j_0)}$")
     ax.legend(ncol=2)
     _save(fig, "fig_bcd")
 

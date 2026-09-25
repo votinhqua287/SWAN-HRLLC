@@ -63,7 +63,7 @@ class SimConfig:
     eps0: float = 1e-5      # nominal FBL reliability used by the placement
     # --- architecture / placement
     arch: str = "swan"       # swan | pass | colocated
-    placement: str = "tapp"  # tapp | sumrate | center | nearest | maxmin
+    placement: str = "tapp"  # tapp (tail-load, proposed) | tappmm | load | sumrate | center | nearest | maxmin
     tapp_j: int = 2          # aggregation depth j0 used in the TAPP/load margin (0 = all segments)
     maxmin_j: int = 0        # depth for the tail-agnostic max-min placement (0 = all)
     reactive: bool = False
@@ -167,7 +167,9 @@ class Simulator:
         cfg, sw, U = self.cfg, self.sw, self.users
         if cfg.arch == "colocated" or cfg.placement == "center":
             return place_center(sw)
-        if cfg.placement == "tapp":
+        if cfg.placement == "tapp":      # proposed: tail-load placement
+            return place_load(sw, U, self.creq, cfg.n, cfg.eps0, cfg.L, j=(cfg.tapp_j or None))
+        if cfg.placement == "tappmm":    # variant: weighted max-min margin
             return place_tapp(sw, U, self.creq, cfg.n, cfg.eps0, cfg.L, j=(cfg.tapp_j or None))
         if cfg.placement == "sumrate":
             return place_sumrate(sw, U, cfg.n, cfg.eps0, cfg.L)

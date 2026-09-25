@@ -42,7 +42,7 @@ ENERGY = dict(Pc_W=0.1, rho_levels=(0.25, 0.5, 1.0))
 
 EXPERIMENTS = {
     # ---------------- campaign 1 (tail comparisons, no energy cost) ----------------
-    "ccdf":     dict(param=None, values=[None], schemes=ALL8, base=dict(Ddrop_slots=40), T=600_000, seeds=4),
+    "ccdf":     dict(param=None, values=[None], schemes=ALL8, base=dict(Ddrop_slots=40), T=400_000, seeds=4),
     "peak":     dict(param="h", values=[2.0, 2.5, 3.0, 3.5, 4.0], schemes=MAIN7, T=150_000, seeds=3),
     "burst":    dict(param="alpha", values=[4000.0, 2000.0, 1000.0, 500.0, 250.0], schemes=MAIN5, T=150_000, seeds=3,
                      derive=lambda v: dict(beta=float(beta_for_activity(v, 0.1, 1e-4)))),
@@ -56,7 +56,7 @@ EXPERIMENTS = {
                      T=100_000, seeds=3),
     "V":        dict(param="V", values=[0.0, 1e3, 3e3, 1e4, 3e4, 1e5], schemes=["TLA-SWAN"], T=250_000, seeds=4,
                      base=dict(rho_levels=(0.1, 0.2, 0.4, 0.7, 1.0))),
-    "hetero":   dict(param="placement", values=["tapp", "tapp1", "tappM", "sumrate", "maxmin", "center"], schemes=["TLA-SWAN"],
+    "hetero":   dict(param="placement", values=["tapp", "tapp1", "tappM", "tappmm", "sumrate", "maxmin", "center"], schemes=["TLA-SWAN"],
                      T=250_000, seeds=4, base=dict(n_crit=2, h_crit=4.0, delta_crit=1e-6)),
     "rician":   dict(param="rician_K", values=[np.inf, 100.0, 10.0, 3.0], schemes=["TLA-SWAN", "SWAN-MLWDF", "SWAN-MW"],
                      T=250_000, seeds=4),
@@ -127,7 +127,7 @@ def make_jobs(exp, T_scale=1.0, seeds=None, procs_hint=4):
                 if spec["param"] == "variant":
                     kw.update(dict(tau_cfg=0.5, la=1.0))   # ablation reference: sub-slot activation delay with lookahead
                     kw.update(ABLATIONS[v])
-                elif spec["param"] == "placement" and isinstance(v, str) and v.startswith("tapp") and len(v) > 4:
+                elif spec["param"] == "placement" and v in ("tapp1", "tapp2", "tappM"):
                     kw["placement"] = "tapp"; kw["tapp_j"] = {"tapp1": 1, "tapp2": 2, "tappM": 0}[v]
                 elif spec["param"] is not None:
                     kw[spec["param"]] = v
@@ -187,7 +187,9 @@ def run_bcd(seeds=(0, 1, 2, 3, 4), grid=200):
         users = sw.drop_users(cfg.K, rng)
         c2 = SimConfig(n_crit=2, h_crit=4.0, delta_crit=1e-6)
         creq = required_rate(c2)
-        x, best, hist = place_tapp(sw, users, creq, cfg.n, cfg.eps0, cfg.L, grid=grid, return_hist=True, j=(cfg.tapp_j or None))
+        from src.placement import place_load
+        x, best, hist = place_load(sw, users, creq, cfg.n, cfg.eps0, cfg.L, grid=grid, return_hist=True, j=(cfg.tapp_j or None))
+        hist = -hist  # objective is minimised (tail load)
         out[str(s)] = dict(hist=hist.tolist(), x=x.tolist(), users=users.tolist(), creq=creq.tolist())
     os.makedirs(os.path.join(RESULTS, "bcd"), exist_ok=True)
     with open(os.path.join(RESULTS, "bcd", "bcd.json"), "w") as f:
