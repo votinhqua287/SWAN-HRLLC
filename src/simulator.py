@@ -238,6 +238,15 @@ class Simulator:
         ctrl = Controller(tab, weights=weights, V=cfg.V, Pc=cfg.Pc_W, V_cfg=cfg.V_cfg, la=cfg.la,
                           tau_cfg=cfg.tau_cfg, edf=(cfg.scheduler == "edf"))
         fading = np.isfinite(cfg.rician_K)
+        # packet values are static when they depend on the age only
+        v_const = None
+        if weights in ("value", "mw", "goodput", "edf") and not (weights == "value" and (cfg.zeta > 0 or cfg.pkt_pf)):
+            v_const = user_weight_values(weights, q, ages_row, cfg.Dmax_slots, a_k, self.kappa, Rbar,
+                                         Z=Z, zeta=0.0, creq=self.creq, pkt_floor=cfg.pkt_floor)
+        v_next_const = None
+        if v_const is not None and cfg.la > 0:
+            v_next_const = user_weight_values(weights, q, ages_row + 1.0, cfg.Dmax_slots, a_k, self.kappa, Rbar,
+                                              Z=Z, zeta=0.0, creq=self.creq, pkt_floor=cfg.pkt_floor)
 
         for t in range(cfg.T):
             A = self.src.step()
@@ -273,15 +282,22 @@ class Simulator:
             # ---- values and decision
             dec = None
             if qpk.any():
-                v = user_weight_values(weights, q, ages_row, cfg.Dmax_slots, a_k, self.kappa, Rbar,
-                                       Z=Z, zeta=cfg.zeta, creq=self.creq, pkt_floor=cfg.pkt_floor)
-                if cfg.pkt_pf and weights == "value":
-                    v = v / np.maximum(Rbar, 1e-3)[:, None]
-                U_now = cum_values(q, v, cfg.bmax)
+                if v_const is not None:
+                    v = v_const
+                else:
+                    v = user_weight_values(weights, q, ages_row, cfg.Dmax_slots, a_k, self.kappa, Rbar,
+                                           Z=Z, zeta=cfg.zeta, creq=self.creq, pkt_floor=cfg.pkt_floor)
+                    if cfg.pkt_pf and weights == "value":
+                        v = v / np.maximum(Rbar, 1e-3)[:, None]
+                bl = qpk > 0
+                U_now = np.full((K, cfg.bmax + 1), np.nan); U_now[:, 0] = 0.0
+                U_now[bl] = cum_values(q[bl], v[bl], cfg.bmax)
                 if cfg.la > 0:
-                    v_next = user_weight_values(weights, q, ages_row + 1.0, cfg.Dmax_slots, a_k, self.kappa, Rbar,
-                                                Z=Z, zeta=cfg.zeta, creq=self.creq, pkt_floor=cfg.pkt_floor)
-                    U_next = cum_values(q, v_next, cfg.bmax)
+                    v_next = v_next_const if v_next_const is not None else user_weight_values(
+                        weights, q, ages_row + 1.0, cfg.Dmax_slots, a_k, self.kappa, Rbar,
+                        Z=Z, zeta=cfg.zeta, creq=self.creq, pkt_floor=cfg.pkt_floor)
+                    U_next = np.full((K, cfg.bmax + 1), np.nan); U_next[:, 0] = 0.0
+                    U_next[bl] = cum_values(q[bl], v_next[bl], cfg.bmax)
                 else:
                     U_next = U_now
                 ctrl._hol = np.max(np.where(q > 0, ages_row, -1), axis=1)

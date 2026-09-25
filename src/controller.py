@@ -28,7 +28,8 @@ def cum_values(q, v, bmax):
     cval = np.cumsum(val, axis=1)
     vrev = v[:, ::-1]
     b = np.arange(1, bmax + 1)
-    idx = np.stack([np.searchsorted(ccnt[k], b, side="left") for k in range(K)])
+    # index of the bin containing the b-th oldest packet (vectorised searchsorted)
+    idx = (ccnt[:, :, None] < b[None, None, :]).sum(axis=1)
     valid = idx < H
     idxc = np.minimum(idx, H - 1)
     prev_cnt = np.where(idxc > 0, np.take_along_axis(ccnt, np.maximum(idxc - 1, 0), axis=1), 0)
@@ -62,61 +63,83 @@ class Controller:
     # ---------------------------------------------------------------- decide
     def decide(self, U_now, U_next, qpk, ready, active_prev, t):
         """U_now/U_next: (K, bmax+1) per-user cumulative values (nan beyond queue).
-        ready: bool (M,) segments usable now; active_prev: bool (M,) active in t-1."""
+        ready: bool (M,) segments usable now; active_prev: bool (M,) active in t-1.
+        Only actions whose users are all backlogged are evaluated (pruning)."""
         tab = self.tab
         K, M = tab.K, tab.M
         backlog = qpk > 0
         valid = ~(tab.mask & ~backlog[None, :]).any(axis=1)
         if not valid.any():
             return None
-        # segments that this action switches on (not active before)
-        switch_on = tab.segmask & ~active_prev[None, :]
+        idx = np.where(valid)[0]                     # candidate actions
+        kb = np.where(backlog)[0]                    # backlogged users
+        mask_v = tab.mask[idx][:, kb]                # (Av, Kb)
+        segmask_v = tab.segmask[idx]                 # (Av, M)
+        switch_on = segmask_v & ~active_prev[None, :]
         n_on = switch_on.sum(axis=1)
-        # usable now: segments of the action that are ready; newly switched-on
-        # segments are usable now only if tau_cfg < 1 (with reduced blocklength)
         frac = self.tau_cfg - np.floor(self.tau_cfg)
         if self.tau_cfg < 1.0:
-            ready_now = np.ones(M, bool)   # everything can be used in this slot
-            n_now = int(round(tab.n * (1.0 - frac)))
-            E_now_full, _ = self._errors(np.ones(M, bool), tab.n_eff)
-            E_now_red = tab.error_table(tab.snr, max(n_now, 1)) if frac > 0 else E_now_full
-            # actions switching on a segment use the reduced blocklength
-            E_now = np.where((n_on > 0)[:, None, None], E_now_red, E_now_full)
+            E_full = tab.E[idx]
+            if frac > 0:
+                n_now = int(round(tab.n * (1.0 - frac)))
+                if self._cache_ready is None:
+                    self._cache_ready = tab.error_table(tab.snr, max(n_now, 1))
+                E_red = self._cache_ready[idx]
+                E_now = np.where((n_on > 0)[:, None, None], E_red, E_full)
+            else:
+                E_now = E_full
         else:
-            E_now, _ = self._errors(ready, tab.n_eff)
-        E_next = tab.E  # next slot: all segments of the action ready, full blocklength
-        val_now = self._value(E_now, U_now, valid)
-        val_next = self._value(E_next, U_next, valid) if self.la > 0 else 0.0
-        J = val_now[0] + self.la * (val_next[0] if self.la > 0 else 0.0)
-        J = J - self.V * self.energy - self.V_cfg * n_on[:, None]
-        J[~valid, :] = -np.inf
+            E_all, _ = self._errors(ready, tab.n_eff)
+            E_now = E_all[idx]
+        E_next = tab.E[idx]
+        val_now, b_now = self._value(E_now, U_now[kb], mask_v)
+        if self.la > 0:
+            val_next, _ = self._value(E_next, U_next[kb], mask_v)
+        else:
+            val_next = 0.0
+        J = val_now + self.la * val_next
+        J = J - self.V * self.energy[idx] - self.V_cfg * n_on[:, None]
         if self.edf:
-            # channel-agnostic EDF: restrict to the action serving the users with
-            # the oldest HoL packets (SM if >=2 backlogged users, else full SA)
-            J = self._edf_mask(J, qpk)
+            J = self._edf_mask_v(J, qpk, idx)
         i = int(np.argmax(J))
-        a, r = np.unravel_index(i, J.shape)
-        if not np.isfinite(J[a, r]) or (val_now[0][a, r] <= 0 and self.la * (val_next[0][a, r] if self.la > 0 else 0) <= 0):
+        a_v, r = np.unravel_index(i, J.shape)
+        if not np.isfinite(J[a_v, r]) or (val_now[a_v, r] <= 0 and (self.la * val_next[a_v, r] if self.la > 0 else 0) <= 0):
             return None
-        b = np.where(tab.mask[a], val_now[1][a, r], 0)
-        eps = np.where(tab.mask[a], E_now[a, r][np.maximum(b, 1) - 1], 0.0)
-        return dict(act=a, rho_idx=r, b=b, eps=eps, energy=self.energy[a, r], n_on=int(n_on[a]),
+        a = int(idx[a_v])
+        b = np.zeros(K, int); b[kb] = np.where(mask_v[a_v], b_now[a_v, r], 0)
+        eps = np.where(tab.mask[a], E_now[a_v, r][np.maximum(b, 1) - 1], 0.0)
+        return dict(act=a, rho_idx=r, b=b, eps=eps, energy=self.energy[a, r], n_on=int(n_on[a_v]),
                     segs=tab.segmask[a], kind=tab.acts[a]["kind"], j=int(tab.j[a]))
 
-    def _value(self, E, U, valid):
-        """Returns (J_val (A, rho), b* (A, rho, K)) for the chosen weighting."""
+    def _value(self, E, U, mask_v):
+        """E: (Av, rho, B) errors, U: (Kb, B+1) cumulative values, mask_v: (Av, Kb).
+        Returns (J_val (Av, rho), b* (Av, rho, Kb))."""
         tab = self.tab
-        succ = 1.0 - E                                  # (A, rho, B)
-        valid_b = ~np.isnan(U[:, 1:])                   # (K, B)
+        succ = 1.0 - E                                  # (Av, rho, B)
+        valid_b = ~np.isnan(U[:, 1:])                   # (Kb, B)
         Uc = np.nan_to_num(U[:, 1:], nan=0.0)
         if self.weights == "goodput":
             Uc = np.where(valid_b, np.arange(1, tab.bmax + 1)[None, :], 0.0)
-        val = succ[:, :, None, :] * Uc[None, None, :, :]  # (A, rho, K, B)
+        val = succ[:, :, None, :] * Uc[None, None, :, :]  # (Av, rho, Kb, B)
         val = np.where(valid_b[None, None, :, :], val, -1e30)
         best = val.max(axis=3)
         barg = val.argmax(axis=3) + 1
-        best = np.where(tab.mask[:, None, :], np.maximum(best, 0.0), 0.0)
+        best = np.where(mask_v[:, None, :], np.maximum(best, 0.0), 0.0)
         return best.sum(axis=2), barg
+
+    def _edf_mask_v(self, J, qpk, idx):
+        tab = self.tab
+        hol = self._hol
+        order = np.argsort(-(hol + 1e-3 * qpk) * (qpk > 0))
+        chosen = [k for k in order[: tab.M] if qpk[k] > 0]
+        target = np.zeros(tab.K, bool); target[chosen] = True
+        if len(chosen) == 1:
+            sel = tab.is_sa & (tab.sa_user == chosen[0]) & (tab.j == tab.M)
+        else:
+            sel = (tab.mask == target[None, :]).all(axis=1) & ~tab.is_sa
+        sel_v = sel[idx]
+        J2 = np.full_like(J, -np.inf); J2[sel_v] = J[sel_v]
+        return J2
 
     def _edf_mask(self, J, qpk):
         tab = self.tab
