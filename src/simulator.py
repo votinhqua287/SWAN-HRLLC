@@ -245,7 +245,7 @@ class Simulator:
         fading = np.isfinite(cfg.rician_K)
         # packet values are static when they depend on the age only
         v_const = None
-        if weights in ("value", "mw", "goodput", "edf") and not (weights == "value" and (cfg.zeta > 0 or cfg.pkt_pf)):
+        if weights in ("value", "goodput", "edf") and not (weights == "value" and (cfg.zeta > 0 or cfg.pkt_pf)):
             v_const = user_weight_values(weights, q, ages_row, cfg.Dmax_slots, a_k, self.kappa, Rbar,
                                          Z=Z, zeta=0.0, creq=self.creq, pkt_floor=cfg.pkt_floor)
         v_next_const = None

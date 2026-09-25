@@ -167,7 +167,9 @@ def user_weight_values(weights, q, ages_row, Dmax, a_k, kappa, Rbar, Z=None, zet
         # worth as much as one at the deadline, not more
         expo = kappa * a_k[:, None] * np.minimum(ages_row + 1.0 + shift[:, None] - Dmax, 0.0)
         return pkt_floor + np.exp(expo)
-    if weights in ("mw", "goodput", "edf"):
+    if weights == "mw":   # max-weight: every packet of user k weighs its queue length Q_k
+        return np.repeat(q.sum(axis=1, keepdims=True).astype(float), H, axis=1)
+    if weights in ("goodput", "edf"):
         return np.ones((K, H))
     if weights == "mlwdf":
         hol = np.max(np.where(q > 0, ages_row, -1), axis=1) + 1.0

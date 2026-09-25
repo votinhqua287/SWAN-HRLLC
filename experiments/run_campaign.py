@@ -58,6 +58,8 @@ EXPERIMENTS = {
                      base=dict(rho_levels=(0.1, 0.2, 0.4, 0.7, 1.0))),
     "hetero":   dict(param="placement", values=["tapp", "tapp1", "tappM", "tappmm", "sumrate", "maxmin", "center"], schemes=["TLA-SWAN"],
                      T=250_000, seeds=4, base=dict(n_crit=2, h_crit=4.0, delta_crit=1e-6)),
+    "hetero16": dict(param="placement", values=["tapp", "tapp1", "tappM", "tappmm", "sumrate", "maxmin", "center"], schemes=["TLA-SWAN"],
+                     T=50_000, seeds=16, base=dict(n_crit=2, h_crit=4.0, delta_crit=1e-6)),
     "rician":   dict(param="rician_K", values=[np.inf, 100.0, 10.0, 3.0], schemes=["TLA-SWAN", "SWAN-MLWDF", "SWAN-MW"],
                      T=250_000, seeds=4),
     "mismatch": dict(param="creq_scale", values=[0.5, 0.75, 1.0, 1.5, 2.0], schemes=["TLA-SWAN"], T=150_000, seeds=3),

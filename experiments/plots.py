@@ -123,8 +123,8 @@ def fig_V():
     _save(fig, "fig_V")
 
 
-def fig_hetero():
-    R = load("hetero")["TLA-SWAN"]
+def fig_hetero(exp="hetero16"):
+    R = load(exp)["TLA-SWAN"] if os.path.isdir(os.path.join(RESULTS, exp)) else load("hetero")["TLA-SWAN"]
     order = ["tapp", "tapp1", "tappM", "tappmm", "sumrate", "maxmin", "center"]
     labels = ["TAPP\n($j_0=2$)", "TAPP\n($j_0=1$)", "TAPP\n($j_0=M$)", "weighted\nmax-min", "Sum-rate", "Max-min\nrate", "Segment\ncentres"]
     keep = [i for i, p in enumerate(order) if p in R]
