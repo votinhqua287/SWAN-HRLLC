@@ -30,17 +30,18 @@ $c_{\rm req}=h\frac{\beta+\Lambda}{\alpha+\beta+\Lambda}$, $\Lambda=\ln(1/\delta
    $\frac1\theta\log\mathrm{sp}\big(\mathbf P\,\mathrm{diag}(1,e^{h(e^\theta-1)})\big)$ per slot (Chang 1994); show that (9) is a first-order approximation or give the exact counterpart.
 
 ## L2 — Lemma 2 (closed-form single-user placement) — Appendix B
-**Claim.** If only user $k$ is active in the max-min objective, $x_m^\star=\Pi_{\mathcal X_m}(x_k-\zeta_m)$ where $\zeta_m\ge0$ solves a cubic (from
+**Objective (updated).** TAPP minimises the tail load $\Xi(\mathbf x)=\sum_k c_{{\rm req},k}/R_k^{(j_0)}(\mathbf x)$ (paper eq. (load)).
+**Claim.** If segment $m$ is among the $j_0$ strongest segments of user $k$ only, $x_m^\star=\Pi_{\mathcal X_m}(x_k-\zeta_m)$ where $\zeta_m\ge0$ solves a cubic (from
 $\partial_{x_m}\big[e^{-2\alpha_g(x_m-(m-1)L_s)}/((x_k-x_m)^2+y_k^2+d^2)\big]=0$); with $\alpha_g=0$, $x_m^\star=\Pi_{\mathcal X_m}(x_k)$.
-If two users share the active minimum, $x_m^\star$ is the root of the quadratic obtained from $\Gamma_k(\mathbf x)=\Gamma_j(\mathbf x)$
-after using the monotonicity of $R^{\rm SA}$ in $\gamma$ and the fact that only the term $|h_{\cdot,m}|$ depends on $x_m$.
-Give explicit coefficients; note the projection onto $\mathcal X_m$.
+If segment $m$ serves two users $k,j$, the coordinate-wise minimiser is a stationary point of
+$c_{{\rm req},k}/R_k^{(j_0)}+c_{{\rm req},j}/R_j^{(j_0)}$ on $\mathcal X_m$; show it lies between the two projections and moves towards the
+user with the larger $c_{\rm req}$; give the high-SNR closed form ($R\approx\log_2\gamma$).
 
 ## P1 — Proposition 1 (convergence/complexity of TAPP) — Appendix C
-Monotone non-decreasing objective (each block update is accepted only if it improves by more than $\xi$), bounded above by
-$\max_k R_k^{\rm SA}/c_{{\rm req},k}$ at $r_{k,m}=d$, hence convergence; finite termination for $\xi>0$; $O(MGK)$ per sweep.
-Optionally: any limit point of the continuous-domain version is a coordinate-wise maximizer, and discuss stationarity for the
-max–min (non-smooth) objective (e.g., via Clarke stationarity).
+Monotone non-increasing tail load (each block update is accepted only if it improves by more than $\xi$), bounded below by
+$\sum_k c_{{\rm req},k}/R_k^{(j_0)}$ at $r_{k,m}=d$, hence convergence; finite termination for $\xi>0$; $O(MGK)$ per sweep.
+Optionally: any limit point of the continuous-domain version is a coordinate-wise minimiser; discuss stationarity (the objective is
+smooth in each coordinate except where the set of $j_0$ strongest segments switches).
 
 ## T1 — Theorem 1 (drift-plus-penalty characterisation of TAS) — Appendix D
 **Objects.** Packet value $\nu_k(a)=e^{\kappa\Lambda_k(a-D_{\max})}$, $\Lambda_k=\ln(1/\delta_k)/D_{\max}$; potential

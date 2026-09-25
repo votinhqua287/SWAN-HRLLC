@@ -67,12 +67,12 @@ $$c_{\rm req}=h\,\frac{\beta+\Lambda}{\alpha+\beta+\Lambda},\qquad \Lambda=\frac
 ($\Lambda\to0$: mean rate; $\Lambda\to\infty$: peak rate.) Implemented in `traffic.required_rate_onoff`.
 
 ### 3.2 Algorithm 1 — Tail-Aware PA Placement (TAPP), frame level
-Maximise the minimum tail-latency margin $\min_k R_k^{(j_0)}(\mathbf x)/c_{{\rm req},k}$, where
-$R_k^{(j_0)}$ is the FBL rate (packets/slot) of user $k$ aggregated over its $j_0$ strongest segments
-($j_0=2$ by default; $j_0=M$ concentrates all PAs on the worst user and was measured to be worse, see the
-placement study in `scratchpad/cmp_place` and experiment `hetero`). Block-coordinate
+Minimise the **tail load** $\Xi(\mathbf x)=\sum_k c_{{\rm req},k}/R_k^{(j_0)}(\mathbf x)$ (time share needed to drain every
+user at its required rate with its $j_0$ strongest segments; $j_0=2$). 16-drop study (40k slots each, `cmp_place2.log`):
+homogeneous pv 9.5e-4 (tail load) vs 1.2e-3 (weighted max-min j0=2) vs 1.17e-3 (sum-rate) vs 2.3e-3 (centres);
+heterogeneous 2.3e-3 vs 5.4e-3 vs 3.9e-3 vs 6.1e-3. The weighted max-min margin is kept as the variant `tappmm`. Block-coordinate
 descent over segments, each block solved by a 1-D grid search (G points) on $\mathcal X_m$;
-stop when no block improves. Complexity $O(I\,M\,G\,K)$. Outputs $\mathbf x^\star$ per frame.
+stop when no block improves (objective non-increasing). Complexity $O(I\,M\,G\,K)$. Outputs $\mathbf x^\star$ per frame.
 Benchmarks: sum-rate placement, tail-agnostic max-min rate, nearest-user projection, segment centres.
 
 ### 3.3 Algorithm 2 — Tail-Aware Scheduling with packet values (TAS), slot level

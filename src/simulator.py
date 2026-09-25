@@ -17,7 +17,7 @@ import numpy as np
 
 from .swan_channel import SWAN
 from .arrivals import OnOffSource, PoissonSource, PeriodicJitterSource, required_rate_onoff
-from .placement import (place_tapp, place_sumrate, place_center, place_nearest, place_maxmin_rate)
+from .placement import (place_tapp, place_sumrate, place_center, place_nearest, place_maxmin_rate, place_load)
 from .service import ActionTable
 from .controller import Controller, cum_values, user_weight_values
 
@@ -64,7 +64,8 @@ class SimConfig:
     # --- architecture / placement
     arch: str = "swan"       # swan | pass | colocated
     placement: str = "tapp"  # tapp | sumrate | center | nearest | maxmin
-    tapp_j: int = 2          # aggregation depth j0 used in the TAPP margin (0 = all segments)
+    tapp_j: int = 2          # aggregation depth j0 used in the TAPP/load margin (0 = all segments)
+    maxmin_j: int = 0        # depth for the tail-agnostic max-min placement (0 = all)
     reactive: bool = False
     tau_r_slots: int = 1
     creq_scale: float = 1.0
@@ -171,7 +172,9 @@ class Simulator:
         if cfg.placement == "sumrate":
             return place_sumrate(sw, U, cfg.n, cfg.eps0, cfg.L)
         if cfg.placement == "maxmin":
-            return place_maxmin_rate(sw, U, cfg.n, cfg.eps0, cfg.L)
+            return place_maxmin_rate(sw, U, cfg.n, cfg.eps0, cfg.L, j=(cfg.maxmin_j or None))
+        if cfg.placement == "load":
+            return place_load(sw, U, self.creq, cfg.n, cfg.eps0, cfg.L, j=(cfg.tapp_j or None))
         if cfg.placement == "nearest":
             return place_nearest(sw, U)
         raise ValueError(cfg.placement)

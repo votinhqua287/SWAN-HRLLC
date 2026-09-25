@@ -84,6 +84,20 @@ def place_nearest(sw, users):
     return x
 
 
-def place_maxmin_rate(sw, users, n, eps0, L, grid=200):
-    """Max-min (tail-agnostic) placement: max_x min_k R_k^agg(x)."""
-    return place_tapp(sw, users, np.ones(len(users)), n, eps0, L, grid)
+def place_maxmin_rate(sw, users, n, eps0, L, grid=200, j=None):
+    """Max-min (tail-agnostic) placement: max_x min_k R_k^(j)(x)."""
+    return place_tapp(sw, users, np.ones(len(users)), n, eps0, L, grid, j=j)
+
+
+def place_load(sw, users, c_req, n, eps0, L, grid=200, x_init=None, j=None, return_hist=False):
+    """Tail-load placement: min_x sum_k c_req_k / R_k^(j)(x) (tail-latency-aware
+    utilisation, i.e. the time share needed to drain every user at its required rate)."""
+    c_req = np.asarray(c_req, float)
+
+    def obj(x):
+        R = np.maximum(agg_rate_packets(sw, users, x, n, eps0, L, j), 1e-6)
+        return -np.sum(c_req / R)
+
+    x0 = sw.x0 + sw.Ls / 2 if x_init is None else x_init
+    x, best, hist = _bcd(sw, users, obj, x0, grid)
+    return (x, best, hist) if return_hist else x
