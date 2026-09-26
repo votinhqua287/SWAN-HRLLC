@@ -22,7 +22,9 @@ Pinching-Antenna Systems for Hyper-Reliable Low-Latency Communications Under Bur
 | `src/placement.py` | TAPP placement (block-coordinate descent) and benchmark placements. |
 | `src/simulator.py` | Slot-level simulator (SimConfig, run_config). |
 | `experiments/run_campaign.py` | Experiment definitions, resumable multiprocessing runner, pooling of results. |
-| `experiments/paper_figs.py` | Figures of the manuscript (`p2a.pdf` ... `p8.pdf`): Times New Roman, one file per panel at printed size, equal panel geometry, legend overflow/overlap check. |
+| `experiments/paper_figs.py` | Figures 2-8 of the manuscript (`key.pdf`, `ccdf.pdf`, `traffic.pdf`, `phy.pdf`, `energy.pdf`, `validation.pdf`, `hetero.pdf`), built with the `ieee-figures` plugin: one PDF per figure at printed size, `(a)`/`(b)` labels under the x-labels, Times New Roman, house-style audit before export, legend overlap check. |
+| `claude-ieee-figures/` | The `ieee-paper-tools` plugin marketplace (plugin `ieee-figures`: the `ieeefig` matplotlib module, its skill and recipes) that the figure script imports. |
+| `tests/test_figures.py` | Audit of the figures: `assert_house_style` for every figure, swept-value ticks, and a curve checked against the results files. |
 | `paper/figures/fig_system.pptx`, `paper/figures/src/fig_system.js` | Fig. 1 as an editable PowerPoint slide and its pptxgenjs generator; `fig_system.pdf` is the exported figure used by LaTeX. |
 | `experiments/plots.py`, `experiments/summarize.py` | Figures of the long (18-page) draft and text tables. |
 | `tests/test_basic.py` | The unit tests of Section 19 of the guide (`python -m pytest -q tests`). |
@@ -49,8 +51,9 @@ python -m experiments.run_campaign --exp peak burst --T-scale 0.4 --seeds 2
 
 ### Figures of the manuscript
 ```bash
-python -m experiments.paper_figs          # all plots (Times New Roman must be installed)
-python -m experiments.paper_figs 4 6      # selected figures
+python -m experiments.paper_figs              # all plots (Times New Roman must be installed)
+python -m experiments.paper_figs traffic phy  # selected figures
+python -m pytest tests/test_figures.py        # house-style audit of the figures
 ```
 Fig. 1: edit `paper/figures/fig_system.pptx` in PowerPoint and export it to PDF with the same slide size
 (File > Save As > PDF) as `paper/figures/fig_system.pdf`; or regenerate it from the script with
