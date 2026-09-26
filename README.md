@@ -22,7 +22,7 @@ Pinching-Antenna Systems for Hyper-Reliable Low-Latency Communications Under Bur
 | `src/placement.py` | TAPP placement (block-coordinate descent) and benchmark placements. |
 | `src/simulator.py` | Slot-level simulator (SimConfig, run_config). |
 | `experiments/run_campaign.py` | Experiment definitions, resumable multiprocessing runner, pooling of results. |
-| `experiments/paper_figs.py` | Figures 2-8 of the manuscript (`key.pdf`, `ccdf.pdf`, `traffic.pdf`, `phy.pdf`, `energy.pdf`, `validation.pdf`, `hetero.pdf`), built with the `ieee-figures` plugin: one PDF per figure at printed size, `(a)`/`(b)` labels under the x-labels, Times New Roman, house-style audit before export, legend overlap check. |
+| `experiments/paper_figs.py` | Figures 2-8 of the manuscript (`key.pdf`, `ccdf.pdf`, `traffic.pdf`, `phy.pdf`, `energy.pdf`, `validation.pdf`, `hetero.pdf`), built with the `ieee-figures` plugin: one PDF per figure at printed size, `(a)`/`(b)` labels under the x-labels, Times New Roman, box on and grid on, house-style audit before export, legend overlap check. |
 | `claude-ieee-figures/` | The `ieee-paper-tools` plugin marketplace (plugin `ieee-figures`: the `ieeefig` matplotlib module, its skill and recipes) that the figure script imports. |
 | `tests/test_figures.py` | Audit of the figures: `assert_house_style` for every figure, swept-value ticks, and a curve checked against the results files. |
 | `paper/figures/fig_system.pptx`, `paper/figures/src/fig_system.js` | Fig. 1 as an editable PowerPoint slide and its pptxgenjs generator; `fig_system.pdf` is the exported figure used by LaTeX. |

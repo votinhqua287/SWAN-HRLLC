@@ -12,8 +12,8 @@ re-checks it (rule 7b) before anything is written:
 On top of the plugin, this script applies the manuscript rules of
 .claude/skills/ieee-paper-writing/SKILL.md section 5: Times New Roman (passed through
 ``FigureStyle``, math in the same face), one PDF per figure with only "(a)", "(b)", ... under
-the x-labels, legends inside the axes and checked for overlap, and the printed size decided
-here (LaTeX includes the PDFs without ``width=``).
+the x-labels, box on and grid on, legends inside the axes and checked for overlap, and the
+printed size decided here (LaTeX includes the PDFs without ``width=``).
 
 Usage:  python -m experiments.paper_figs              (all figures)
         python -m experiments.paper_figs key phy      (selected figures)
@@ -38,13 +38,16 @@ from src.tail_analysis import single_user_fixed_sa  # noqa: E402
 FIG = os.path.join(ROOT, "paper", "figures")
 TS_MS = 0.1  # slot duration in ms
 
-STYLE = ief.FigureStyle(font_size=8, font_family=("Times New Roman", "Times", "DejaVu Serif", "serif"))
+STYLE = ief.FigureStyle(font_size=8, font_family=("Times New Roman", "Times", "DejaVu Serif", "serif"), grid=True)
 
 
 def apply_style():
-    """Plugin style, with the manuscript's font family (Times New Roman, math included)."""
+    """Plugin style plus the manuscript rules: Times New Roman (math included), box on, grid on."""
     ief.apply_publication_style(STYLE)
     mpl.rcParams.update({
+        # box on: all four spines, ticks mirrored on the top and right sides; grid on: light major grid
+        "axes.spines.top": True, "axes.spines.right": True, "xtick.top": True, "ytick.right": True,
+        "grid.linewidth": 0.3, "grid.alpha": 0.5, "grid.color": "0.65",
         "font.family": "serif", "font.serif": list(STYLE.font_family),
         "mathtext.fontset": "custom", "mathtext.rm": "Times New Roman",
         "mathtext.it": "Times New Roman:italic", "mathtext.bf": "Times New Roman:bold",
@@ -446,6 +449,7 @@ def build_hetero():
     ax.set_yscale("log"); ax.set_ylim(1e-3, 3e-2)
     ax.yaxis.set_major_locator(FixedLocator([1e-3, 1e-2])); ax.yaxis.set_minor_formatter(NullFormatter())
     ax.tick_params(axis="x", which="both", length=0, labelsize=6.5)
+    ax.grid(axis="x", visible=False)  # categorical axis: no vertical grid lines
     legend(ax, ["upper left", "upper center", "upper right"], ncols=(2, 1))
     return finish(fig, axes)
 

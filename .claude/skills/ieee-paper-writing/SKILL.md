@@ -1,6 +1,6 @@
 ---
 name: ieee-paper-writing
-description: Rules for drafting IEEE journal manuscripts (TWC/TCOM/TVT) in this repository - 13-page budget for the initial submission, section structure, figure and table economy, figures built with the vendored ieee-figures plugin (ieeefig: swept-value ticks, no error bars, Okabe-Ito encoding, house-style audit) plus Times New Roman, only (a)/(b) under the x-label, equal panel sizes, legends inside axes, editable PPTX system diagrams, placeholders for co-author derivations, and the compile-and-count checklist. Use whenever writing or revising paper/main.tex or any paper figure.
+description: Rules for drafting IEEE journal manuscripts (TWC/TCOM/TVT) in this repository - 13-page budget for the initial submission, section structure, figure and table economy, figures built with the vendored ieee-figures plugin (ieeefig: swept-value ticks, no error bars, Okabe-Ito encoding, house-style audit) plus Times New Roman, box on, grid on, only (a)/(b) under the x-label, equal panel sizes, legends inside axes, editable PPTX system diagrams, placeholders for co-author derivations, and the compile-and-count checklist. Use whenever writing or revising paper/main.tex or any paper figure.
 ---
 
 # IEEE paper writing (TWC / TCOM initial submission)
@@ -49,8 +49,9 @@ description: Rules for drafting IEEE journal manuscripts (TWC/TCOM/TVT) in this 
 - [ ] Figures referenced in order; every figure and table discussed in the text.
 - [ ] Figures follow Section 5: built with the `ieee-figures` plugin, `assert_house_style` clean for
       every figure (`python -m experiments.paper_figs` prints one status line per figure and
-      `pytest tests/test_figures.py` re-checks it), Times New Roman, only "(a)", "(b)" under the
-      x-labels, every legend inside its axes without covering data (no WARNING in the status lines),
+      `pytest tests/test_figures.py` re-checks it), Times New Roman, box on and grid on, only "(a)",
+      "(b)" under the x-labels, every legend inside its axes without covering data (no WARNING in the
+      status lines),
       cropped PDF width <= 516 pt (`figure*`) or <= 252 pt (`figure`), system diagrams as editable PPTX.
 - [ ] Placeholders: `\todobox` count reported; each one line.
 - [ ] `refs.bib` entries with `% TODO verify` listed in the hand-over message.
@@ -101,24 +102,31 @@ and `paper/figures/src/fig_system.js` (PPTX diagram).
    downloads.sourceforge.net/corefonts, unpack with `cabextract`, copy the TTFs to
    `/usr/share/fonts/truetype/msttcorefonts`, `fc-cache -f`, delete the matplotlib font cache); never
    fall back silently to another font. Diagram text (PPTX) uses the same font.
-3. **One PDF per figure; panel labels are only "(a)", "(b)", ... directly under the x-label**, drawn
+3. **Box on, grid on** (MATLAB style) for every axes: all four spines
+   (`axes.spines.top`/`axes.spines.right` = True, overriding the plugin's two-spine default), inward
+   ticks mirrored on the top and right sides (`xtick.top`, `ytick.right`), and a light major grid
+   (`ief.FigureStyle(grid=True)`; `grid.linewidth` 0.3, `grid.color` 0.65, `grid.alpha` 0.5; no
+   minor grid). The vertical grid is switched off on categorical bar charts (`ax.grid(axis="x",
+   visible=False)`). Set once in `apply_style()` next to the font override, never per figure; legends
+   keep their opaque white background so that grid lines do not run through the entries.
+4. **One PDF per figure; panel labels are only "(a)", "(b)", ... directly under the x-label**, drawn
    by `ief.add_panel_labels` at the height measured from the x-label extent (`finish()` in
    `paper_figs.py`). No panel titles and no text other than the letter; describe the panels in the
    caption ("... versus (a) ..., (b) ..., and (c) ...") and refer to them as `Fig.~\ref{fig:x}(a)`.
    Do not load `subfig`, `caption` or `subcaption` (they change the IEEEtran caption style).
-4. **Legends inside the axes and not covering data**: `legend(ax, locs, ncols)` tries the candidate
+5. **Legends inside the axes and not covering data**: `legend(ax, locs, ncols)` tries the candidate
    corners and column counts, keeps the first that covers no data sample and stays inside the axes
    box, and reports a WARNING otherwise. Frameless look (opaque white background, no edge), short
    labels ("M-LWDF", "Max-weight"). If no corner is free: give the axes head-room (`ylim`), then
    shorten the labels, then use one shared legend row above the panels (`shared_legend`, plugin
    recipe 3; Figs. 4 and 5). Every other panel keeps its own legend.
-5. **System diagrams (Fig. 1 and similar) are editable PowerPoint files**, built with pptxgenjs from
+6. **System diagrams (Fig. 1 and similar) are editable PowerPoint files**, built with pptxgenjs from
    shapes, lines and text boxes (no embedded images), Times New Roman, drawn at 2x the printed size
    with 13-16 pt text (6.5-8 pt printed). Export to PDF with LibreOffice and include it with
    `\includegraphics[width=\columnwidth]{...}`; commit the `.pptx`, the generator script and the `.pdf`.
    Do not use TikZ for figures the authors need to edit. The plugin does not cover schematics.
-6. **Audit test**: `tests/test_figures.py` builds every figure and runs `assert_house_style`, checks
+7. **Audit test**: `tests/test_figures.py` builds every figure and runs `assert_house_style`, checks
    the ticks of the relaxed figures' sweep panels and that a plotted curve equals the results file.
    Run it with the unit tests before committing figures.
-7. Probabilities on a log axis, with zero-violation points drawn at the resolution floor
+8. Probabilities on a log axis, with zero-violation points drawn at the resolution floor
    1/(observed packets); every plotted point inside the y-limits (`make_trend` draws unclipped markers).
