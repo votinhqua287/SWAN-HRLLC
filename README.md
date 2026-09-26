@@ -22,7 +22,9 @@ Pinching-Antenna Systems for Hyper-Reliable Low-Latency Communications Under Bur
 | `src/placement.py` | TAPP placement (block-coordinate descent) and benchmark placements. |
 | `src/simulator.py` | Slot-level simulator (SimConfig, run_config). |
 | `experiments/run_campaign.py` | Experiment definitions, resumable multiprocessing runner, pooling of results. |
-| `experiments/plots.py`, `experiments/summarize.py` | Figures and text tables. |
+| `experiments/paper_figs.py` | Figures of the manuscript (`p2a.pdf` ... `p8.pdf`): Times New Roman, one file per panel at printed size, equal panel geometry, legend overflow/overlap check. |
+| `paper/figures/fig_system.pptx`, `paper/figures/src/fig_system.js` | Fig. 1 as an editable PowerPoint slide and its pptxgenjs generator; `fig_system.pdf` is the exported figure used by LaTeX. |
+| `experiments/plots.py`, `experiments/summarize.py` | Figures of the long (18-page) draft and text tables. |
 | `tests/test_basic.py` | The unit tests of Section 19 of the guide (`python -m pytest -q tests`). |
 | `results/` | Raw simulation outputs (one JSON per run). |
 | `docs/` | Feasibility assessment (Vietnamese), research design, co-author hand-off. |
@@ -44,6 +46,16 @@ python -m experiments.plots
 # a subset, shorter runs
 python -m experiments.run_campaign --exp peak burst --T-scale 0.4 --seeds 2
 ```
+
+### Figures of the manuscript
+```bash
+python -m experiments.paper_figs          # all plots (Times New Roman must be installed)
+python -m experiments.paper_figs 4 6      # selected figures
+```
+Fig. 1: edit `paper/figures/fig_system.pptx` in PowerPoint and export it to PDF with the same slide size
+(File > Save As > PDF) as `paper/figures/fig_system.pdf`; or regenerate it from the script with
+`npm install pptxgenjs && node paper/figures/src/fig_system.js` followed by
+`soffice --headless --convert-to pdf --outdir paper/figures paper/figures/fig_system.pptx`.
 
 ### Compiling the paper
 ```bash
