@@ -9,7 +9,7 @@ Pinching-Antenna Systems for Hyper-Reliable Low-Latency Communications Under Bur
 | Path | Content |
 |---|---|
 | `02_Tail_Latency_Aware_SWAN_HRLLC_Bursty_Traffic.md` | The research execution guide (source of the plan). |
-| `paper/main.tex`, `paper/refs.bib`, `paper/figures/` | IEEEtran manuscript (13 pages, TWC initial-submission limit) and figures. Derivations assigned to the co-author are marked `[To do]`. `paper/main_18pages_backup.tex` keeps the long draft with the extra figures/tables that were cut. |
+| `paper/main.tex`, `paper/refs.bib`, `paper/figures/` | IEEEtran manuscript (12 pages; TWC initial-submission limit 13) and figures. Derivations assigned to the co-author are marked `[To do]`. `paper/main_18pages_backup.tex` keeps the long draft with the extra figures/tables that were cut. |
 | `.claude/skills/ieee-paper-writing/SKILL.md` | Writing rules for this repository, including the 13-page budget for the initial submission. |
 | `src/arrivals.py` | ON–OFF (Markov-modulated), Poisson and periodic-with-jitter sources; closed-form tail-latency-aware required rate. |
 | `src/queue.py` | Deadline-constrained FIFO queue as an age profile (ageing, dropping, FIFO service). |

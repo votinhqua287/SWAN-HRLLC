@@ -27,7 +27,10 @@ description: Rules for drafting IEEE journal manuscripts (TWC/TCOM/TVT) in this 
   expression, or a sweep whose curves are parallel to another sweep already shown.
 
 ## 3. Structure and style (IEEEtran)
-- Abstract <= 250 words: context, gap, method, headline numbers. Index terms 5-8.
+- **Abstract: 200-220 words**, one paragraph, no citations, no equations beyond simple numbers: context (1-2 sentences),
+  gap (1), model and problem (2), method (2-3), headline results with numbers (1-2). Count the words of the rendered
+  abstract (`pdftotext -f 1 -l 1 main.pdf - | sed -n '/^Abstract/,/^Index Terms/p' | wc -w`) and report the count.
+  Every number in the abstract must match a statement in the results section. Index terms 5-8.
 - Introduction: motivation (1 paragraph), related work in 2-3 compact paragraphs (cite groups of
   works, never one sentence per paper), contributions as 4-5 bullets, organization + notation.
 - System model: one subsection per model component, equations numbered, symbols defined once.
@@ -40,6 +43,7 @@ description: Rules for drafting IEEE journal manuscripts (TWC/TCOM/TVT) in this 
 
 ## 4. Checklist before handing over
 - [ ] `pdfinfo` page count <= 13.0 (state it in the hand-over message).
+- [ ] Abstract 200-220 words (state the count).
 - [ ] No `Overfull \hbox`, no undefined references/citations.
 - [ ] Figures referenced in order; every figure and table discussed in the text.
 - [ ] Figures follow Section 5: Times New Roman, only "(a)", "(b)" under the x-labels, all panels of a

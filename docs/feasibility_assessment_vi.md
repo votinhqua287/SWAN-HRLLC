@@ -50,7 +50,7 @@ là **bài đầu tiên** đồng thời ở cả các chiều trên. Đây là 
   Bài này đáp ứng (i) qua SWAN (ống dẫn sóng phân đoạn, mỗi đoạn một feed/RF chain, một PA kích hoạt mỗi đoạn — không có
   inter-antenna radiation), (ii) qua khung hai thang thời gian (đặt PA theo thống kê đuôi + lập lịch theo giá trị gói), (iii) qua
   khung mô phỏng cấp slot với FBL, hàng đợi có deadline và nguồn ON–OFF.
-- **Độ dài:** TWC giới hạn **13 trang** cho bản nộp đầu (bản nháp hiện tại: 13 trang kể cả tài liệu tham khảo, ~12,5 trang nội dung; phần chứng minh của đồng nghiệp cần được viết gọn trong Appendix hoặc chuyển thành supplementary material). Quy tắc ngân sách trang được ghi trong `.claude/skills/ieee-paper-writing/SKILL.md`.
+- **Độ dài:** TWC giới hạn **13 trang** cho bản nộp đầu (bản nháp hiện tại: 12 trang kể cả tài liệu tham khảo, Abstract 215 từ; phần chứng minh của đồng nghiệp cần được viết gọn trong Appendix hoặc chuyển thành supplementary material). Quy tắc ngân sách trang được ghi trong `.claude/skills/ieee-paper-writing/SKILL.md`.
 - **Điểm yếu cần bù:** phần lý thuyết. Các "[To do]" trong bản nháp là chỗ đồng nghiệp cần điền (mục 6).
 
 ## 4. Các giả định thiết kế tôi đã chọn (cần đối chiếu với guide của bạn)
